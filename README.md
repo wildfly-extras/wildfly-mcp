@@ -3,6 +3,11 @@
 A WildFly [MCP server](https://github.com/modelcontextprotocol/servers) to integrate with your AI chatbot in order to interact with WildFly server using natural language.
 This MCP server is a Java quarkus fat jar application that you can configure in your chatbot mcp configuration.
 
+This MCP server (a Tool in AI terminologie) helps you troubleshoot running WildFly servers using natural language.
+You can ask questions such as:
+
+`Hi, could you connect to the WildFly server running on host localhost and port 9990 with the user name admin and password admin and get the content of the log file, analyze it and check for errors?`
+
 ## Download the latest WildFly MCP binary
 
 You can download it from: `https://github.com/jfdenise/wildfly-mcp-server/releases/download/1.0.0.Alpha1/wildfly-mcp-server-1.0.0.Alpha1-runner.jar`
