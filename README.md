@@ -1,7 +1,6 @@
 # wildfly-mcp-server
 A WildFly [MCP server](https://github.com/modelcontextprotocol/servers) to integrate with your AI chatbot in order to interact with WildFly server using natural language.
-This MCP server is Java quarkus fat jar that you can configure in your chatbot mcp configuration.
-
+This MCP server is a Java quarkus fat jar application that you can configure in your chatbot mcp configuration.
 
 ## Build the MCP server fat jar
 
@@ -25,7 +24,21 @@ Add the following json to the chatbot configuration file:
 }
 ``` 
 
-* For [claude.ai](http://claude.ai), add it to the file `~/.config/Claude/claude_desktop_config.json`.
+If you are using [jbang](http://jbang.dev), you can add the following json content:
+
+```
+{
+  "mcpServers": {
+    "wildfly": {
+            "command": "jbang",
+            "args": ["--quiet",
+                    "org.wildfly:wildfly-mcp-server:1.0.0-SNAPSHOT:runner"]
+    }
+  }
+}
+```
+
+* For [claude.ai](http://claude.ai), on Fedora, add it to the file `~/.config/Claude/claude_desktop_config.json`.
 
 * For [MCPHost](https://github.com/mark3labs/mcphost), add to a file named `mcp.json` and call: `./mcphost_Linux_x86_64/mcphost --config [path to the file]/mcp.json --model ollama:llama3.1:8b`
 
@@ -50,7 +63,7 @@ Then attempt to connect to the server with invalid credentials, that the chatbot
 * Hi, could you connect to the WildFly server and get the content of the log file, analyze it and check for errors?
 * Hi, could you disable the security logging?
 
-# Metrics
+### Metrics
 
 * Hi, could you connect to the WildFly server running on host localhost and port 9990 with the user name admin and password admin and check the available memory and cpu usage?
 * Hi, could you connect to the WildFly server and check if it has enough available memory to run?
