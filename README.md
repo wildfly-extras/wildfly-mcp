@@ -1,14 +1,15 @@
-# wildfly-mcp-server
+# WildFly MCP
+
 A WildFly [MCP server](https://github.com/modelcontextprotocol/servers) to integrate with your AI chatbot in order to interact with WildFly server using natural language.
 This MCP server is a Java quarkus fat jar application that you can configure in your chatbot mcp configuration.
 
-## Build the MCP server fat jar
+## Build WildFly MCP fat jar
 
 Make sure to use JDK21+.
  
 `mvn clean install`
 
-# Configuring the chatbot
+## Configure the chatbot
 
 Add the following json to the chatbot configuration file:
 
@@ -41,6 +42,68 @@ If you are using [jbang](http://jbang.dev), you can add the following json conte
 * For [claude.ai](http://claude.ai), on Fedora, add it to the file `~/.config/Claude/claude_desktop_config.json`.
 
 * For [MCPHost](https://github.com/mark3labs/mcphost), add to a file named `mcp.json` and call: `./mcphost_Linux_x86_64/mcphost --config [path to the file]/mcp.json --model ollama:llama3.1:8b`
+
+## Available Tools
+
+### getWildFlyStatus
+Get the status of the WildFly server running on the provided host and port arguments.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running.
+- `port`: The port the WildFly server is listening on.
+
+### getWildFlyConsumedMemory
+Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running.
+- `port`: The port the WildFly server is listening on.
+
+### getWildFlyConsumedCPU
+Get the percentage of cpu consumed by the WildFly server running on the provided host and port arguments.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running.
+- `port`: The port the WildFly server is listening on.
+
+### getWildFlyLogFileContent
+Get the log file content of the WildFly server running on the provided host and port arguments.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running.
+- `port`: The port the WildFly server is listening on.
+- `userName`: The admin user name.
+- `password`: The admin user password.
+
+
+### getWildFlyLoggingCategories
+Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running.
+- `port`: The port the WildFly server is listening on.
+- `userName`: The admin user name.
+- `password`: The admin user password.
+
+### enableWildFlyLoggingCategory
+Enable a logging category for the WildFly server running on the provided host and port arguments.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running.
+- `port`: The port the WildFly server is listening on.
+- `userName`: The admin user name.
+- `password`: The admin user password.
+- `loggingCategory`: The logging category. Can be a high level category (such as `security`, `web`, `http`) or a specific logger (`io.undertow`).
+
+### disableWildFlyLoggingCategory
+Disable a logging category for the WildFly server running on the provided host and port arguments.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running.
+- `port`: The port the WildFly server is listening on.
+- `userName`: The admin user name.
+- `password`: The admin user password.
+- `loggingCategory`: The logging category. Can be a high level category (such as `security`, `web`, `http`) or a specific logger (`io.undertow`).
 
 ## Example of questions to ask to the WildFly server
 

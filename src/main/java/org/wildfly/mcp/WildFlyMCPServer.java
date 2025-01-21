@@ -52,7 +52,7 @@ public class WildFlyMCPServer {
     WildFlyHealthClient wildflyHealthClient;
 
     @Tool(description = "Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments. User name and password must be provided.")
-    String getLoggingCategories(String host, String port, String userName, String userPassword) {
+    String getWildFlyLoggingCategories(String host, String port, String userName, String userPassword) {
         try {
             GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, userName, userPassword));
             Set<String> enabled = new TreeSet<>();
@@ -66,7 +66,7 @@ public class WildFlyMCPServer {
     }
 
     @Tool(description = "Enable a logging category for the WildFly server running on the provided host and port arguments. User name and password must be provided.")
-    String enableLoggingCategory(String host, String port, String loggingCategory, String userName, String userPassword) {
+    String enableWildFlyLoggingCategory(String host, String port, String loggingCategory, String userName, String userPassword) {
         try {
             String category = findCategory(loggingCategory);
             GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, userName, userPassword));
@@ -81,7 +81,7 @@ public class WildFlyMCPServer {
     }
 
     @Tool(description = "Disable a logging category for the WildFly server running on the provided host and port arguments. User name and password must be provided.")
-    String disableLogging(String host, String port, String loggingCategory, String userName, String userPassword) {
+    String disableWildFlyLoggingCategory(String host, String port, String loggingCategory, String userName, String userPassword) {
         try {
             String category = findCategory(loggingCategory);
             GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, userName, userPassword));
@@ -96,7 +96,7 @@ public class WildFlyMCPServer {
     }
 
     @Tool(description = "Get the log file content of the WildFly server running on the provided host and port arguments. User name and password must be provided.")
-    String getLogFileContent(String host, String port, String userName, String userPassword) {
+    String getWildFlyLogFileContent(String host, String port, String userName, String userPassword) {
         try {
             GetLoggingFileResponse response = wildflyClient.call(new GetLoggingFileRequest(host, port, userName, userPassword));
             StringBuilder builder = new StringBuilder();
