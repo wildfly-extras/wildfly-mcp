@@ -151,7 +151,7 @@ public class WildFlyMCPServer {
             List<Status> statusList = wildflyHealthClient.getHealth(url);
             String consumedMemory = getWildFlyConsumedMemory(host, port).content().get(0).asText().text();
             String cpuUsage = getWildFlyConsumedCPU(host, port).content().get(0).asText().text();
-            return buildResponse("Server is running. \n" + consumedMemory + "\n" + cpuUsage);
+            return buildResponse("Server is running.", consumedMemory, cpuUsage);
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the status ");
         }
@@ -273,18 +273,20 @@ public class WildFlyMCPServer {
         }
     }
 
-    private ToolResponse buildResponse(String content) {
+    private ToolResponse buildResponse(String... content) {
         return buildResponse(false, content);
     }
 
-    private ToolResponse buildErrorResponse(String content) {
+    private ToolResponse buildErrorResponse(String... content) {
         return buildResponse(true, content);
     }
 
-    private ToolResponse buildResponse(boolean isError, String content) {
-        TextContent text = new TextContent(content);
+    private ToolResponse buildResponse(boolean isError, String... content) {
         List<TextContent> lst = new ArrayList<>();
-        lst.add(text);
+        for (String str : content) {
+            TextContent text = new TextContent(str);
+            lst.add(text);
+        }
         return new ToolResponse(isError, lst);
     }
 }
