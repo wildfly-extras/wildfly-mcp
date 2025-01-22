@@ -57,93 +57,113 @@ public class WildFlyMCPServer {
     WildFlyHealthClient wildflyHealthClient;
 
     @Tool(description = "Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments.")
-    ToolResponse getWildFlyLoggingCategories(String host, String port, 
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
+    ToolResponse getWildFlyLoggingCategories(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
             @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+        Server server = new Server(host, port);
         try {
             User user = new User(userName, userPassword);
-            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, user));
+            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(server, user));
             Set<String> enabled = new TreeSet<>();
             for (String e : response.result) {
                 enabled.addAll(getHighLevelCategory(e));
             }
             return buildResponse("The list of enabled logging caterories is: " + enabled);
         } catch (Exception ex) {
-            return handleException(ex, host, port, "retrieving the logging categories");
+            return handleException(ex, server, "retrieving the logging categories");
         }
     }
 
     @Tool(description = "Enable a logging category for the WildFly server running on the provided host and port arguments.")
-    ToolResponse enableWildFlyLoggingCategory(String host, String port, String loggingCategory, 
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
+    ToolResponse enableWildFlyLoggingCategory(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            String loggingCategory,
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
             @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+        Server server = new Server(host, port);
         try {
             User user = new User(userName, userPassword);
             String category = findCategory(loggingCategory);
-            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, user));
+            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(server, user));
             if (response.result != null && response.result.contains(category)) {
                 return buildErrorResponse("The logging category " + loggingCategory + " is already enabled. You can get the enabled logging categories from the getLoggingCategories operation.");
             }
-            wildflyClient.call(new AddLoggerRequest(host, port, user, category));
+            wildflyClient.call(new AddLoggerRequest(server, user, category));
             return buildResponse("The logging category " + loggingCategory + " has been enabled by using the " + category + " logger");
         } catch (Exception ex) {
-            return handleException(ex, host, port, "enabling the logger " + loggingCategory);
+            return handleException(ex, server, "enabling the logger " + loggingCategory);
         }
     }
 
     @Tool(description = "Disable a logging category for the WildFly server running on the provided host and port arguments.")
-    ToolResponse disableWildFlyLoggingCategory(String host, String port, String loggingCategory, 
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
+    ToolResponse disableWildFlyLoggingCategory(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            String loggingCategory,
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
             @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+        Server server = new Server(host, port);
         try {
             User user = new User(userName, userPassword);
             String category = findCategory(loggingCategory);
-            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, user));
+            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(server, user));
             if (response.result != null && !response.result.contains(category)) {
                 return buildErrorResponse("The logging category " + loggingCategory + " is not already enabled, you should first enabled it.");
             }
-            wildflyClient.call(new RemoveLoggerRequest(host, port, user, category));
+            wildflyClient.call(new RemoveLoggerRequest(server, user, category));
             return buildResponse("The logging category " + loggingCategory + " has been removed by using the " + category + " logger.");
         } catch (Exception ex) {
-            return handleException(ex, host, port, "disabling the logger " + loggingCategory);
+            return handleException(ex, server, "disabling the logger " + loggingCategory);
         }
     }
 
     @Tool(description = "Get the log file content of the WildFly server running on the provided host and port arguments.")
-    ToolResponse getWildFlyLogFileContent(String host, String port, 
-            @ToolArg(name = "numberOfLines", description = "The optional number of log file lines to retrieve. By default all lines are retrieved.", required = false)String numLines,
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
+    ToolResponse getWildFlyLogFileContent(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "numberOfLines", description = "The optional number of log file lines to retrieve. By default the last 200 lines are retrieved. Use `-1` to get all lines.", required = false) String numLines,
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
             @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+        Server server = new Server(host, port);
         try {
             User user = new User(userName, userPassword);
-            GetLoggingFileResponse response = wildflyClient.call(new GetLoggingFileRequest(host, port, numLines, user));
+            GetLoggingFileResponse response = wildflyClient.call(new GetLoggingFileRequest(server, numLines, user));
             StringBuilder builder = new StringBuilder();
             for (String line : response.result) {
                 builder.append(line).append("\n");
             }
             return buildResponse("WildFly server log file Content: `" + builder.toString() + "`");
         } catch (Exception ex) {
-            return handleException(ex, host, port, "retrieving the log file ");
+            return handleException(ex, server, "retrieving the log file ");
         }
     }
 
     @Tool(description = "Get the status of the WildFly server running on the provided host and port arguments.")
-    ToolResponse getWildFlyStatus(String host, String port) {
+    ToolResponse getWildFlyStatus(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+        Server server = new Server(host, port);
         try {
-            String url = "http://" + host + ":" + port + "/health";
+            String url = "http://" + server.host + ":" + server.port + "/health";
             List<Status> statusList = wildflyHealthClient.getHealth(url);
             String consumedMemory = getWildFlyConsumedMemory(host, port).content().get(0).asText().text();
             String cpuUsage = getWildFlyConsumedCPU(host, port).content().get(0).asText().text();
             return buildResponse("Server is running. \n" + consumedMemory + "\n" + cpuUsage);
         } catch (Exception ex) {
-            return handleException(ex, host, port, "retrieving the status ");
+            return handleException(ex, server, "retrieving the status ");
         }
     }
 
     @Tool(description = "Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.")
-    ToolResponse getWildFlyConsumedMemory(String host, String port) {
+    ToolResponse getWildFlyConsumedMemory(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+        Server server = new Server(host, port);
         try {
-            String url = "http://" + host + ":" + port + "/metrics";
+            String url = "http://" + server.host + ":" + server.port + "/metrics";
             String metrics = wildflyMetricsClient.getMetrics(url);
             double max = 0;
             double used = 0;
@@ -160,14 +180,17 @@ public class WildFlyMCPServer {
             //int remains = 100 - (int)result;
             return buildResponse("The percentage of consumed memory is " + (int) result + "%");
         } catch (Exception ex) {
-            return handleException(ex, host, port, "retrieving the consumed memory");
+            return handleException(ex, server, "retrieving the consumed memory");
         }
     }
 
     @Tool(description = "Get the percentage of cpu consumed by the WildFly server running on the provided host and port arguments.")
-    ToolResponse getWildFlyConsumedCPU(String host, String port) {
+    ToolResponse getWildFlyConsumedCPU(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+        Server server = new Server(host, port);
         try {
-            String url = "http://" + host + ":" + port + "/metrics";
+            String url = "http://" + server.host + ":" + server.port + "/metrics";
             String metrics = wildflyMetricsClient.getMetrics(url);
             double val = 0;
             for (String l : metrics.split("\\n")) {
@@ -178,7 +201,7 @@ public class WildFlyMCPServer {
             }
             return buildResponse("The percentage of consumed cpu is " + (int) val * 100 + "%");
         } catch (Exception ex) {
-            return handleException(ex, host, port, "retrieving the consumed CPU");
+            return handleException(ex, server, "retrieving the consumed CPU");
         }
     }
 
@@ -222,21 +245,21 @@ public class WildFlyMCPServer {
         return hc;
     }
 
-    private ToolResponse handleException(Exception ex, String host, String port, String action) {
+    private ToolResponse handleException(Exception ex, Server server, String action) {
         LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
         if (ex instanceof ClientWebApplicationException clientWebApplicationException) {
             Response resp = clientWebApplicationException.getResponse();
             resp.getStatus();
-            return buildErrorResponse(" Error when " + action + " for the server running on host " + host + " and port " + port);
+            return buildErrorResponse(" Error when " + action + " for the server running on host " + server.host + " and port " + server.port);
         } else {
             if (ex instanceof AuthenticationException || ex instanceof ForbiddenException) {
                 return buildErrorResponse(ex.getMessage());
             } else {
                 if (ex instanceof HttpHostConnectException) {
-                    return buildErrorResponse(" Error when connecting to the server " + host + ":" + port + ". Could you check the host and port.");
+                    return buildErrorResponse(" Error when connecting to the server " + server.host + ":" + server.port + ". Could you check the host and port.");
                 } else {
                     if (ex instanceof UnknownHostException) {
-                        return buildErrorResponse("The server host " + host + " is not a known server name");
+                        return buildErrorResponse("The server host " + server.host + " is not a known server name");
                     } else {
                         if (ex instanceof NullUserException) {
                             return buildErrorResponse("A user name and password are required to interact with WildFly management entrypoint.");
@@ -249,11 +272,11 @@ public class WildFlyMCPServer {
 
         }
     }
-    
+
     private ToolResponse buildResponse(String content) {
         return buildResponse(false, content);
     }
-    
+
     private ToolResponse buildErrorResponse(String content) {
         return buildResponse(true, content);
     }

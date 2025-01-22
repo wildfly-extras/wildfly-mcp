@@ -37,16 +37,14 @@ public class WildFlyManagementClient {
         public final List<String> address = new ArrayList<>();
         public final String operation;
 
-        private final String host;
-        private final int port;
+        private final Server server;
         private final User user;
         private final Class<R> responseClass;
 
-        protected ManagementRequest(Class<R> responseClass, String operation, String host, String port, User user) {
+        protected ManagementRequest(Class<R> responseClass, String operation, Server server, User user) {
             this.responseClass = responseClass;
             this.operation = operation;
-            this.host = host;
-            this.port = Integer.parseInt(port);
+            this.server = server;
             this.user = user;
         }
 
@@ -64,8 +62,8 @@ public class WildFlyManagementClient {
 
         public String level = "ALL";
 
-        AddLoggerRequest(String host, String port, User user, String category) {
-            super(ManagementResponse.class, "add", host, port, user);
+        AddLoggerRequest(Server server, User user, String category) {
+            super(ManagementResponse.class, "add", server, user);
             address.add("subsystem");
             address.add("logging");
             address.add("logger");
@@ -76,12 +74,12 @@ public class WildFlyManagementClient {
     public static class GetLoggingFileRequest extends ManagementRequest<GetLoggingFileResponse> {
 
         public String name = "server.log";
-        public String lines = "200";
+        public String lines;
 
-        GetLoggingFileRequest(String host, String port, String numLines, User user) {
-            super(GetLoggingFileResponse.class, "read-log-file", host, port, user);
-            if(numLines == null || numLines.isEmpty()) {
-                numLines = "-1";
+        GetLoggingFileRequest(Server server, String numLines, User user) {
+            super(GetLoggingFileResponse.class, "read-log-file", server, user);
+            if (numLines == null || numLines.isEmpty()) {
+                numLines = "200";
             }
             lines = numLines;
             address.add("subsystem");
@@ -96,8 +94,8 @@ public class WildFlyManagementClient {
         @JsonProperty("child-type")
         public String childType = "logger";
 
-        GetLoggersRequest(String host, String port, User user) {
-            super(GetLoggersResponse.class, "read-children-names", host, port, user);
+        GetLoggersRequest(Server server, User user) {
+            super(GetLoggersResponse.class, "read-children-names", server, user);
             address.add("subsystem");
             address.add("logging");
         }
@@ -105,8 +103,8 @@ public class WildFlyManagementClient {
 
     public static class RemoveLoggerRequest extends ManagementRequest<ManagementResponse> {
 
-        RemoveLoggerRequest(String host, String port, User user, String category) {
-            super(ManagementResponse.class, "remove", host, port, user);
+        RemoveLoggerRequest(Server server, User user, String category) {
+            super(ManagementResponse.class, "remove", server, user);
             address.add("subsystem");
             address.add("logging");
             address.add("logger");
@@ -136,12 +134,12 @@ public class WildFlyManagementClient {
     public <T extends ManagementResponse> T call(ManagementRequest<T> request) throws Exception {
         CredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(
-                new AuthScope(request.host, request.port, "ManagementRealm", "digest"),
+                new AuthScope(request.server.host, Integer.parseInt(request.server.port), "ManagementRealm", "digest"),
                 new UsernamePasswordCredentials(request.user.userName, request.user.userPassword));
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setDefaultCredentialsProvider(credsProvider)
                 .build()) {
-            HttpPost httppost = new HttpPost("http://" + request.host + ":" + request.port + "/management");
+            HttpPost httppost = new HttpPost("http://" + request.server.host + ":" + request.server.port + "/management");
             StringEntity requestEntity = new StringEntity(
                     request.toJson(),
                     ContentType.APPLICATION_JSON);
@@ -170,6 +168,7 @@ public class WildFlyManagementClient {
     private boolean isAuthenticationError(int code) {
         return code == 401;
     }
+
     private boolean isForbiddenError(int code) {
         return code == 403;
     }

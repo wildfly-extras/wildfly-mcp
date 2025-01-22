@@ -71,36 +71,41 @@ You can set the user name and password in the tool shell command using the syste
 }
 ``` 
 
+## Default WildFly server host and port
+
+If no host is provided, `localhost` is used. If no port is provided, `9990` is used.
+You can configure default host and port using the system properties `-Dorg.wildfly.host.name=<host name>` and `-Dorg.wildfly.port=<port>`
+
 ## Available Tools
 
 ### getWildFlyStatus
 Get the status of the WildFly server running on the provided host and port arguments.
 
 **Inputs**:
-- `host`: The host name on which the WildFly server is running.
-- `port`: The port the WildFly server is listening on.
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 
 ### getWildFlyConsumedMemory
 Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.
 
 **Inputs**:
-- `host`: The host name on which the WildFly server is running.
-- `port`: The port the WildFly server is listening on.
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 
 ### getWildFlyConsumedCPU
 Get the percentage of cpu consumed by the WildFly server running on the provided host and port arguments.
 
 **Inputs**:
-- `host`: The host name on which the WildFly server is running.
-- `port`: The port the WildFly server is listening on.
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 
 ### getWildFlyLogFileContent
 Get the log file content of the WildFly server running on the provided host and port arguments.
 
 **Inputs**:
-- `host`: The host name on which the WildFly server is running.
-- `port`: The port the WildFly server is listening on.
-- `numberOfLines`: The optional number of log file lines to retrieve. By default all lines are retrieved.
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
+- `numberOfLines`: The optional number of log file lines to retrieve. By default the last 200 lines are retrieved. Use `-1` to get all lines.
 - `userName`: The admin user name. Optional.
 - `password`: The admin user password. Optional.
 
@@ -109,8 +114,8 @@ Get the log file content of the WildFly server running on the provided host and 
 Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments.
 
 **Inputs**:
-- `host`: The host name on which the WildFly server is running.
-- `port`: The port the WildFly server is listening on.
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 - `userName`: The admin user name. Optional.
 - `password`: The admin user password. Optional.
 
@@ -118,8 +123,8 @@ Get the list of the enabled logging categories for the WildFly server running on
 Enable a logging category for the WildFly server running on the provided host and port arguments.
 
 **Inputs**:
-- `host`: The host name on which the WildFly server is running.
-- `port`: The port the WildFly server is listening on.
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 - `userName`: The admin user name. Optional.
 - `password`: The admin user password. Optional.
 - `loggingCategory`: The logging category. Can be a high level category (such as `security`, `web`, `http`) or a specific logger (`io.undertow`).
@@ -128,8 +133,8 @@ Enable a logging category for the WildFly server running on the provided host an
 Disable a logging category for the WildFly server running on the provided host and port arguments.
 
 **Inputs**:
-- `host`: The host name on which the WildFly server is running.
-- `port`: The port the WildFly server is listening on.
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 - `userName`: The admin user name. Optional.
 - `password`: The admin user password. Optional.
 - `loggingCategory`: The logging category. Can be a high level category (such as `security`, `web`, `http`) or a specific logger (`io.undertow`).
@@ -140,7 +145,7 @@ Make sure to first start you WildFly sever.
 
 ### Health and resource consumption
 
-* Hi, could you connect to the WildFly server running on host localhost and port 9990 and get the status of the server?
+* Hi, could you connect to the WildFly server and get the status of the server?
 * Hi, is the WildFly server activity normal?
 * Hi, could you connect again to the WildFly server and give me the status?
 * Hi, could you connect to the WildFly server running on localhost and port 7777 and get the status of the server?
@@ -157,6 +162,6 @@ Then attempt to connect to the server with invalid credentials, that the chatbot
 
 ### Metrics
 
-* Hi, could you connect to the WildFly server running on host localhost and port 9990 with the user name admin and password admin and check the available memory and cpu usage?
+* Hi, could you connect to the WildFly server and check the available memory and cpu usage?
 * Hi, could you connect to the WildFly server and check if it has enough available memory to run?
 * Hi, could you connect to the WildFly server and check if the cpu usage is not too high?

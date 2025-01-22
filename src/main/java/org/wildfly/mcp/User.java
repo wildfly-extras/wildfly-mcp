@@ -4,8 +4,6 @@
  */
 package org.wildfly.mcp;
 
-import java.util.Objects;
-
 /**
  *
  * @author jdenise
