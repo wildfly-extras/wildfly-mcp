@@ -112,11 +112,12 @@ public class WildFlyMCPServer {
 
     @Tool(description = "Get the log file content of the WildFly server running on the provided host and port arguments. User name and password must be provided.")
     ToolResponse getWildFlyLogFileContent(String host, String port, 
+            @ToolArg(name = "numberOfLines", description = "The optional number of log file lines to retrieve. By default all lines are retrieved.", required = false)String numLines,
             @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
             @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
         try {
             User user = new User(userName, userPassword);
-            GetLoggingFileResponse response = wildflyClient.call(new GetLoggingFileRequest(host, port, user));
+            GetLoggingFileResponse response = wildflyClient.call(new GetLoggingFileRequest(host, port, numLines, user));
             StringBuilder builder = new StringBuilder();
             for (String line : response.result) {
                 builder.append(line).append("\n");

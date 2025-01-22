@@ -100,6 +100,7 @@ Get the log file content of the WildFly server running on the provided host and 
 **Inputs**:
 - `host`: The host name on which the WildFly server is running.
 - `port`: The port the WildFly server is listening on.
+- `numberOfLines`: The optional number of log file lines to retrieve. By default all lines are retrieved.
 - `userName`: The admin user name. Optional.
 - `password`: The admin user password. Optional.
 

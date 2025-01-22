@@ -78,8 +78,12 @@ public class WildFlyManagementClient {
         public String name = "server.log";
         public String lines = "200";
 
-        GetLoggingFileRequest(String host, String port, User user) {
+        GetLoggingFileRequest(String host, String port, String numLines, User user) {
             super(GetLoggingFileResponse.class, "read-log-file", host, port, user);
+            if(numLines == null || numLines.isEmpty()) {
+                numLines = "-1";
+            }
+            lines = numLines;
             address.add("subsystem");
             address.add("logging");
             address.add("log-file");
