@@ -56,13 +56,12 @@ public class WildFlyMCPServer {
     @RestClient
     WildFlyHealthClient wildflyHealthClient;
 
-    @Tool(description = "Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments. User name and password must be provided.")
+    @Tool(description = "Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments.")
     ToolResponse getWildFlyLoggingCategories(String host, String port, 
             @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
             @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
         try {
             User user = new User(userName, userPassword);
-            LOGGER.info("Received user " + user.userName + " password " + user.userPassword);
             GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, user));
             Set<String> enabled = new TreeSet<>();
             for (String e : response.result) {
@@ -74,7 +73,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Enable a logging category for the WildFly server running on the provided host and port arguments. User name and password must be provided.")
+    @Tool(description = "Enable a logging category for the WildFly server running on the provided host and port arguments.")
     ToolResponse enableWildFlyLoggingCategory(String host, String port, String loggingCategory, 
             @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
             @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
