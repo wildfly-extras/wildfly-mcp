@@ -92,7 +92,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Disable a logging category for the WildFly server running on the provided host and port arguments. User name and password must be provided.")
+    @Tool(description = "Disable a logging category for the WildFly server running on the provided host and port arguments.")
     ToolResponse disableWildFlyLoggingCategory(String host, String port, String loggingCategory, 
             @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
             @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
@@ -110,7 +110,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get the log file content of the WildFly server running on the provided host and port arguments. User name and password must be provided.")
+    @Tool(description = "Get the log file content of the WildFly server running on the provided host and port arguments.")
     ToolResponse getWildFlyLogFileContent(String host, String port, 
             @ToolArg(name = "numberOfLines", description = "The optional number of log file lines to retrieve. By default all lines are retrieved.", required = false)String numLines,
             @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 

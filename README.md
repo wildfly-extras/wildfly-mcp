@@ -28,7 +28,7 @@ Add the following json to the chatbot configuration file:
     "wildfly": {
             "command": "java",
             "args": ["-jar",
-                    "[path to the repository]/wildfly-mcp-server/target/wildfly-mcp-server-1.0.0-SNAPSHOT-runner.jar"]
+                    "[path to the repository]/wildfly-mcp-server/target/wildfly-mcp-server-1.0.0.Final-SNAPSHOT-runner.jar"]
     }
   }
 }
@@ -42,7 +42,7 @@ If you are using [jbang](http://jbang.dev), you can add the following json conte
     "wildfly": {
             "command": "jbang",
             "args": ["--quiet",
-                    "org.wildfly:wildfly-mcp-server:1.0.0-SNAPSHOT:runner"]
+                    "org.wildfly:wildfly-mcp-server:1.0.0.Final-SNAPSHOT:runner"]
     }
   }
 }
@@ -65,7 +65,7 @@ You can set the user name and password in the tool shell command using the syste
             "args": ["-Dorg.wildfly.user.name=admin",
                      "-Dorg.wildfly.user.password=admin",
                      "-jar",
-                     "[path to the repository]/wildfly-mcp-server/target/wildfly-mcp-server-1.0.0-SNAPSHOT-runner.jar"]
+                     "[path to the repository]/wildfly-mcp-server/target/wildfly-mcp-server-1.0.0.Final-SNAPSHOT-runner.jar"]
     }
   }
 }
