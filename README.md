@@ -52,6 +52,25 @@ If you are using [jbang](http://jbang.dev), you can add the following json conte
 
 * For [MCPHost](https://github.com/mark3labs/mcphost), add to a file named `mcp.json` and call: `./mcphost_Linux_x86_64/mcphost --config [path to the file]/mcp.json --model ollama:llama3.1:8b`
 
+## Admin user credentials
+
+The tools allow you to provide user name and password directly in your question. 
+You can set the user name and password in the tool shell command using the system properties `-Dorg.wildfly.user.name=<user name>` and `-Dorg.wildfly.user.password=<user password>`
+
+```
+{
+  "mcpServers": {
+    "wildfly": {
+            "command": "java",
+            "args": ["-Dorg.wildfly.user.name=admin",
+                     "-Dorg.wildfly.user.password=admin",
+                     "-jar",
+                     "[path to the repository]/wildfly-mcp-server/target/wildfly-mcp-server-1.0.0-SNAPSHOT-runner.jar"]
+    }
+  }
+}
+``` 
+
 ## Available Tools
 
 ### getWildFlyStatus
@@ -81,8 +100,8 @@ Get the log file content of the WildFly server running on the provided host and 
 **Inputs**:
 - `host`: The host name on which the WildFly server is running.
 - `port`: The port the WildFly server is listening on.
-- `userName`: The admin user name.
-- `password`: The admin user password.
+- `userName`: The admin user name. Optional.
+- `password`: The admin user password. Optional.
 
 
 ### getWildFlyLoggingCategories
@@ -91,8 +110,8 @@ Get the list of the enabled logging categories for the WildFly server running on
 **Inputs**:
 - `host`: The host name on which the WildFly server is running.
 - `port`: The port the WildFly server is listening on.
-- `userName`: The admin user name.
-- `password`: The admin user password.
+- `userName`: The admin user name. Optional.
+- `password`: The admin user password. Optional.
 
 ### enableWildFlyLoggingCategory
 Enable a logging category for the WildFly server running on the provided host and port arguments.
@@ -100,8 +119,8 @@ Enable a logging category for the WildFly server running on the provided host an
 **Inputs**:
 - `host`: The host name on which the WildFly server is running.
 - `port`: The port the WildFly server is listening on.
-- `userName`: The admin user name.
-- `password`: The admin user password.
+- `userName`: The admin user name. Optional.
+- `password`: The admin user password. Optional.
 - `loggingCategory`: The logging category. Can be a high level category (such as `security`, `web`, `http`) or a specific logger (`io.undertow`).
 
 ### disableWildFlyLoggingCategory
@@ -110,8 +129,8 @@ Disable a logging category for the WildFly server running on the provided host a
 **Inputs**:
 - `host`: The host name on which the WildFly server is running.
 - `port`: The port the WildFly server is listening on.
-- `userName`: The admin user name.
-- `password`: The admin user password.
+- `userName`: The admin user name. Optional.
+- `password`: The admin user password. Optional.
 - `loggingCategory`: The logging category. Can be a high level category (such as `security`, `web`, `http`) or a specific logger (`io.undertow`).
 
 ## Example of questions to ask to the WildFly server

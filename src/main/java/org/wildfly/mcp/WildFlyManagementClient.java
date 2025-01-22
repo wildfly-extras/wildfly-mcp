@@ -39,17 +39,15 @@ public class WildFlyManagementClient {
 
         private final String host;
         private final int port;
-        private final String userName;
-        private final String password;
+        private final User user;
         private final Class<R> responseClass;
 
-        protected ManagementRequest(Class<R> responseClass, String operation, String host, String port, String userName, String password) {
+        protected ManagementRequest(Class<R> responseClass, String operation, String host, String port, User user) {
             this.responseClass = responseClass;
             this.operation = operation;
             this.host = host;
             this.port = Integer.parseInt(port);
-            this.userName = userName;
-            this.password = password;
+            this.user = user;
         }
 
         String toJson() throws JsonProcessingException {
@@ -66,8 +64,8 @@ public class WildFlyManagementClient {
 
         public String level = "ALL";
 
-        AddLoggerRequest(String host, String port, String userName, String password, String category) {
-            super(ManagementResponse.class, "add", host, port, userName, password);
+        AddLoggerRequest(String host, String port, User user, String category) {
+            super(ManagementResponse.class, "add", host, port, user);
             address.add("subsystem");
             address.add("logging");
             address.add("logger");
@@ -80,8 +78,8 @@ public class WildFlyManagementClient {
         public String name = "server.log";
         public String lines = "200";
 
-        GetLoggingFileRequest(String host, String port, String userName, String password) {
-            super(GetLoggingFileResponse.class, "read-log-file", host, port, userName, password);
+        GetLoggingFileRequest(String host, String port, User user) {
+            super(GetLoggingFileResponse.class, "read-log-file", host, port, user);
             address.add("subsystem");
             address.add("logging");
             address.add("log-file");
@@ -94,8 +92,8 @@ public class WildFlyManagementClient {
         @JsonProperty("child-type")
         public String childType = "logger";
 
-        GetLoggersRequest(String host, String port, String userName, String password) {
-            super(GetLoggersResponse.class, "read-children-names", host, port, userName, password);
+        GetLoggersRequest(String host, String port, User user) {
+            super(GetLoggersResponse.class, "read-children-names", host, port, user);
             address.add("subsystem");
             address.add("logging");
         }
@@ -103,8 +101,8 @@ public class WildFlyManagementClient {
 
     public static class RemoveLoggerRequest extends ManagementRequest<ManagementResponse> {
 
-        RemoveLoggerRequest(String host, String port, String userName, String password, String category) {
-            super(ManagementResponse.class, "remove", host, port, userName, password);
+        RemoveLoggerRequest(String host, String port, User user, String category) {
+            super(ManagementResponse.class, "remove", host, port, user);
             address.add("subsystem");
             address.add("logging");
             address.add("logger");
@@ -135,7 +133,7 @@ public class WildFlyManagementClient {
         CredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(
                 new AuthScope(request.host, request.port, "ManagementRealm", "digest"),
-                new UsernamePasswordCredentials(request.userName, request.password));
+                new UsernamePasswordCredentials(request.user.userName, request.user.userPassword));
         try (CloseableHttpClient httpclient = HttpClients.custom()
                 .setDefaultCredentialsProvider(credsProvider)
                 .build()) {

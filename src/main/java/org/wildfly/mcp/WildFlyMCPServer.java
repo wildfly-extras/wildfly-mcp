@@ -10,6 +10,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import io.quarkiverse.mcp.server.Tool;
+import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkus.rest.client.reactive.Url;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
@@ -22,6 +23,7 @@ import java.util.logging.Logger;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.http.conn.HttpHostConnectException;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
+import org.wildfly.mcp.User.NullUserException;
 import org.wildfly.mcp.WildFlyManagementClient.AddLoggerRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggersRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggersResponse;
@@ -52,9 +54,13 @@ public class WildFlyMCPServer {
     WildFlyHealthClient wildflyHealthClient;
 
     @Tool(description = "Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments. User name and password must be provided.")
-    String getWildFlyLoggingCategories(String host, String port, String userName, String userPassword) {
+    String getWildFlyLoggingCategories(String host, String port, 
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
+            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
         try {
-            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, userName, userPassword));
+            User user = new User(userName, userPassword);
+            LOGGER.info("Received user " + user.userName + " password " + user.userPassword);
+            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, user));
             Set<String> enabled = new TreeSet<>();
             for (String e : response.result) {
                 enabled.addAll(getHighLevelCategory(e));
@@ -66,14 +72,17 @@ public class WildFlyMCPServer {
     }
 
     @Tool(description = "Enable a logging category for the WildFly server running on the provided host and port arguments. User name and password must be provided.")
-    String enableWildFlyLoggingCategory(String host, String port, String loggingCategory, String userName, String userPassword) {
+    String enableWildFlyLoggingCategory(String host, String port, String loggingCategory, 
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
+            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
         try {
+            User user = new User(userName, userPassword);
             String category = findCategory(loggingCategory);
-            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, userName, userPassword));
+            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, user));
             if (response.result != null && response.result.contains(category)) {
                 return "The logging category " + loggingCategory + " is already enabled. You can get the enabled logging categories from the getLoggingCategories operation.";
             }
-            wildflyClient.call(new AddLoggerRequest(host, port, userName, userPassword, category));
+            wildflyClient.call(new AddLoggerRequest(host, port, user, category));
             return "The logging category " + loggingCategory + " has been enabled by using the " + category + " logger";
         } catch (Exception ex) {
             return handleException(ex, host, port, "enabling the logger " + loggingCategory);
@@ -81,14 +90,17 @@ public class WildFlyMCPServer {
     }
 
     @Tool(description = "Disable a logging category for the WildFly server running on the provided host and port arguments. User name and password must be provided.")
-    String disableWildFlyLoggingCategory(String host, String port, String loggingCategory, String userName, String userPassword) {
+    String disableWildFlyLoggingCategory(String host, String port, String loggingCategory, 
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
+            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
         try {
+            User user = new User(userName, userPassword);
             String category = findCategory(loggingCategory);
-            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, userName, userPassword));
+            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(host, port, user));
             if (response.result != null && !response.result.contains(category)) {
                 return "The logging category " + loggingCategory + " is not already enabled, you should first enabled it";
             }
-            wildflyClient.call(new RemoveLoggerRequest(host, port, userName, userPassword, category));
+            wildflyClient.call(new RemoveLoggerRequest(host, port, user, category));
             return "The logging category " + loggingCategory + " has been removed by using the " + category + " logger";
         } catch (Exception ex) {
             return handleException(ex, host, port, "disabling the logger " + loggingCategory);
@@ -96,9 +108,12 @@ public class WildFlyMCPServer {
     }
 
     @Tool(description = "Get the log file content of the WildFly server running on the provided host and port arguments. User name and password must be provided.")
-    String getWildFlyLogFileContent(String host, String port, String userName, String userPassword) {
+    String getWildFlyLogFileContent(String host, String port, 
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName, 
+            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
         try {
-            GetLoggingFileResponse response = wildflyClient.call(new GetLoggingFileRequest(host, port, userName, userPassword));
+            User user = new User(userName, userPassword);
+            GetLoggingFileResponse response = wildflyClient.call(new GetLoggingFileRequest(host, port, user));
             StringBuilder builder = new StringBuilder();
             for (String line : response.result) {
                 builder.append(line).append("\n");
@@ -220,7 +235,11 @@ public class WildFlyMCPServer {
                     if (ex instanceof UnknownHostException) {
                         return "The server host " + host + " is not a known server name";
                     } else {
-                        return ex.getMessage();
+                        if (ex instanceof NullUserException) {
+                            return "A user name and password are required to interact with WildFly management entrypoint.";
+                        } else {
+                            return ex.getMessage();
+                        }
                     }
                 }
             }
