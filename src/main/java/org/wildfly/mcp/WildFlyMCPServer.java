@@ -4,6 +4,7 @@
  */
 package org.wildfly.mcp;
 
+import com.sun.management.OperatingSystemMXBean;
 import io.quarkiverse.mcp.server.TextContent;
 import java.util.List;
 
@@ -17,6 +18,8 @@ import io.quarkus.rest.client.reactive.Url;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.core.Response;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Set;
@@ -147,11 +150,20 @@ public class WildFlyMCPServer {
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
         Server server = new Server(host, port);
         try {
-            String url = "http://" + server.host + ":" + server.port + "/health";
-            List<Status> statusList = wildflyHealthClient.getHealth(url);
             String consumedMemory = getWildFlyConsumedMemory(host, port).content().get(0).asText().text();
             String cpuUsage = getWildFlyConsumedCPU(host, port).content().get(0).asText().text();
-            return buildResponse("Server is running.", consumedMemory, cpuUsage);
+            WildFlyStatus status = wildflyClient.getStatus(server);
+            String state = "Server is running.";
+            if (!status.isOk()) {
+                List<String> ret = new ArrayList<>();
+                ret.add("Server is in an invalid state");
+                ret.addAll(status.getStatus());
+                ret.add(consumedMemory);
+                ret.add(cpuUsage);
+                return buildErrorResponse(ret.toArray(String[]::new));
+            } else {
+                return buildResponse(state, consumedMemory, cpuUsage);
+            }
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the status ");
         }
@@ -163,22 +175,17 @@ public class WildFlyMCPServer {
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
         Server server = new Server(host, port);
         try {
-            String url = "http://" + server.host + ":" + server.port + "/metrics";
-            String metrics = wildflyMetricsClient.getMetrics(url);
-            double max = 0;
-            double used = 0;
-            for (String l : metrics.split("\\n")) {
-                if (l.startsWith("base_memory_maxHeap_bytes")) {
-                    max = Double.parseDouble(l.substring(l.indexOf(" ")));
-                } else {
-                    if (l.startsWith("base_memory_usedHeap_bytes")) {
-                        used = Double.parseDouble(l.substring(l.indexOf(" ")));
-                    }
-                }
+            try (JMXSession session = new JMXSession(server)) {
+                MemoryMXBean proxy
+                        = ManagementFactory.newPlatformMXBeanProxy(session.connection,
+                                ManagementFactory.MEMORY_MXBEAN_NAME,
+                                MemoryMXBean.class);
+                double max = proxy.getHeapMemoryUsage().getMax();
+                double used = proxy.getHeapMemoryUsage().getUsed();
+                double result = (used * 100) / max;
+                //int remains = 100 - (int)result;
+                return buildResponse("The percentage of consumed memory is " + (int) result + "%");
             }
-            double result = (used * 100) / max;
-            //int remains = 100 - (int)result;
-            return buildResponse("The percentage of consumed memory is " + (int) result + "%");
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the consumed memory");
         }
@@ -190,16 +197,14 @@ public class WildFlyMCPServer {
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
         Server server = new Server(host, port);
         try {
-            String url = "http://" + server.host + ":" + server.port + "/metrics";
-            String metrics = wildflyMetricsClient.getMetrics(url);
-            double val = 0;
-            for (String l : metrics.split("\\n")) {
-                if (l.startsWith("base_cpu_processCpuLoad")) {
-                    val = Double.parseDouble(l.substring(l.indexOf(" ")));
-                    break;
-                }
+            try (JMXSession session = new JMXSession(server)) {
+                OperatingSystemMXBean proxy
+                        = ManagementFactory.newPlatformMXBeanProxy(session.connection,
+                                ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME,
+                                OperatingSystemMXBean.class);
+                double val = proxy.getProcessCpuLoad();
+                return buildResponse("The percentage of consumed cpu is " + (int) val * 100 + "%");
             }
-            return buildResponse("The percentage of consumed cpu is " + (int) val * 100 + "%");
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the consumed CPU");
         }
