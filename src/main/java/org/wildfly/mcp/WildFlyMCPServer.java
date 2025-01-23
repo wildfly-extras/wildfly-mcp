@@ -147,12 +147,15 @@ public class WildFlyMCPServer {
     @Tool(description = "Get the status of the WildFly server running on the provided host and port arguments.")
     ToolResponse getWildFlyStatus(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
+            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
         Server server = new Server(host, port);
         try {
+            User user = new User(userName, userPassword);
             String consumedMemory = getWildFlyConsumedMemory(host, port).content().get(0).asText().text();
             String cpuUsage = getWildFlyConsumedCPU(host, port).content().get(0).asText().text();
-            WildFlyStatus status = wildflyClient.getStatus(server);
+            WildFlyStatus status = wildflyClient.getStatus(server, user);
             String state = "Server is running.";
             if (!status.isOk()) {
                 List<String> ret = new ArrayList<>();
@@ -204,6 +207,27 @@ public class WildFlyMCPServer {
                                 OperatingSystemMXBean.class);
                 double val = proxy.getProcessCpuLoad();
                 return buildResponse("The percentage of consumed cpu is " + (int) val * 100 + "%");
+            }
+        } catch (Exception ex) {
+            return handleException(ex, server, "retrieving the consumed CPU");
+        }
+    }
+    
+    @Tool(description = "Get the metrics (in prometheus format) of the WildFly server running on the provided host and port arguments.")
+    ToolResponse getWildFlyPrometheusMetrics(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+        Server server = new Server(host, port);
+        try {
+            String url = "http://"+server.host+":"+server.port+"/metrics";
+            try {
+                return buildResponse(wildflyMetricsClient.getMetrics(url));
+            } catch(ClientWebApplicationException ex) {
+                if (ex.getResponse().getStatus() == 404) {
+                    return buildResponse("The WildFly metrics are not available in the WildFly server running on " + server.host + ":" + server.port);
+                } else {
+                    throw ex;
+                }
             }
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the consumed CPU");

@@ -227,7 +227,7 @@ public class WildFlyManagementClient {
             try {
                 int code = response.getStatusLine().getStatusCode();
                 if (isAuthenticationError(code)) {
-                    throw new AuthenticationException("Authentication error, could you check the provided username and passord.");
+                    throw new AuthenticationException("Authentication error, could you check the provided username and password.");
                 }
                 if (isForbiddenError(code)) {
                     throw new ForbiddenException("Authentication error, the provided user is not allowed to interact with the server.");
@@ -243,11 +243,11 @@ public class WildFlyManagementClient {
         }
     }
 
-    public WildFlyStatus getStatus(Server server) throws Exception {
-        String serverState = call(new ReadServerStateRequest(server, null)).result;
-        String runningMode = call(new ReadRunningModeRequest(server, null)).result;
-        List<Deployment> deployments = call(new ReadDeploymentsStatusRequest(server, null)).result;
-        List<Object> bootErrors = call(new ReadBootErrorsRequest(server, null)).result;
+    public WildFlyStatus getStatus(Server server, User user) throws Exception {
+        String serverState = call(new ReadServerStateRequest(server, user)).result;
+        String runningMode = call(new ReadRunningModeRequest(server, user)).result;
+        List<Deployment> deployments = call(new ReadDeploymentsStatusRequest(server, user)).result;
+        List<Object> bootErrors = call(new ReadBootErrorsRequest(server, user)).result;
         return new WildFlyStatus(serverState, runningMode, bootErrors, deployments);
     }
 

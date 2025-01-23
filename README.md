@@ -84,6 +84,8 @@ Get the status of the WildFly server running on the provided host and port argum
 **Inputs**:
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
+- `userName`: The admin user name. Optional.
+- `password`: The admin user password. Optional.
 
 ### getWildFlyConsumedMemory
 Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.
@@ -108,7 +110,6 @@ Get the log file content of the WildFly server running on the provided host and 
 - `numberOfLines`: The optional number of log file lines to retrieve. By default the last 200 lines are retrieved. Use `-1` to get all lines.
 - `userName`: The admin user name. Optional.
 - `password`: The admin user password. Optional.
-
 
 ### getWildFlyLoggingCategories
 Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments.
@@ -139,6 +140,13 @@ Disable a logging category for the WildFly server running on the provided host a
 - `password`: The admin user password. Optional.
 - `loggingCategory`: The logging category. Can be a high level category (such as `security`, `web`, `http`) or a specific logger (`io.undertow`).
 
+### getWildFlyPrometheusMetrics
+Get the metrics (in prometheus format) of the WildFly server running on the provided host and port arguments.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
+
 ## Example of questions to ask to the WildFly server
 
 Make sure to first start you WildFly sever.
@@ -162,6 +170,7 @@ Then attempt to connect to the server with invalid credentials, that the chatbot
 
 ### Metrics
 
+* Could you retrieve the metrics of the WildFly server?
 * Hi, could you connect to the WildFly server and check the available memory and cpu usage?
 * Hi, could you connect to the WildFly server and check if it has enough available memory to run?
 * Hi, could you connect to the WildFly server and check if the cpu usage is not too high?
