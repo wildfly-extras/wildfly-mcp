@@ -131,6 +131,13 @@ public class WildFlyManagementClient {
         }
     }
     
+    public static class ReadConfigAsXmlRequest extends ManagementRequest<ReadConfigAsXmlResponse> {
+        
+        ReadConfigAsXmlRequest(Server server, User user) {
+            super(ReadConfigAsXmlResponse.class, "read-config-as-xml", server, user);
+        }
+    }
+    
     public static class ReadDeploymentsStatusRequest extends ReadAttributeRequest<ReadDeploymentsStatusResponse> {
         
         ReadDeploymentsStatusRequest(Server server, User user) {
@@ -186,6 +193,8 @@ public class WildFlyManagementClient {
         public String outcome;
         @JsonProperty("failure-description")
         public String failureDescription;
+        @JsonProperty("response-headers")
+        Map<String, Object> responseHeaders;
     }
     
     public static class GetLoggersResponse extends ManagementResponse {
@@ -199,6 +208,11 @@ public class WildFlyManagementClient {
     }
     
     public static class ReadAttributeResponse extends ManagementResponse {
+        
+        public String result;
+    }
+    
+    public static class ReadConfigAsXmlResponse extends ManagementResponse {
         
         public String result;
     }

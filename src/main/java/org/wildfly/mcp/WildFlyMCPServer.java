@@ -39,6 +39,8 @@ import org.wildfly.mcp.WildFlyManagementClient.GetLoggersRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggersResponse;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggingFileRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggingFileResponse;
+import org.wildfly.mcp.WildFlyManagementClient.ReadConfigAsXmlRequest;
+import org.wildfly.mcp.WildFlyManagementClient.ReadConfigAsXmlResponse;
 import org.wildfly.mcp.WildFlyManagementClient.RemoveLoggerRequest;
 
 public class WildFlyMCPServer {
@@ -78,6 +80,22 @@ public class WildFlyMCPServer {
                 enabled.addAll(getHighLevelCategory(e));
             }
             return buildResponse("The list of enabled logging caterories is: " + enabled);
+        } catch (Exception ex) {
+            return handleException(ex, server, "retrieving the logging categories");
+        }
+    }
+    
+    @Tool(description = "Gets the server configuration xml file content of the WildFly server running on the provided host and port arguments.")
+    ToolResponse getWildFlyServerConfigurationFile(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
+            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+        Server server = new Server(host, port);
+        try {
+            User user = new User(userName, userPassword);
+            ReadConfigAsXmlResponse response = wildflyClient.call(new ReadConfigAsXmlRequest(server, user));
+            return buildResponse(response.result);
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the logging categories");
         }

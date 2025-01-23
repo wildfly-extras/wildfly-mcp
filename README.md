@@ -156,6 +156,15 @@ Invoke a single WildFly CLI operation on the WildFly server running on the provi
 - `userName`: The admin user name. Optional.
 - `password`: The admin user password. Optional.
 
+### getWildFlyServerConfigurationFile
+Gets the server configuration xml file content of the WildFly server running on the provided host and port arguments.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
+- `userName`: The admin user name. Optional.
+- `password`: The admin user password. Optional.
+
 ## Example of questions to ask to the WildFly server
 
 Make sure to first start you WildFly sever.
