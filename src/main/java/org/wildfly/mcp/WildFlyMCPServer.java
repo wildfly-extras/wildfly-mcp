@@ -18,7 +18,6 @@ import io.quarkus.rest.client.reactive.Url;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.core.Response;
-import java.io.ByteArrayOutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.net.UnknownHostException;
@@ -114,7 +113,7 @@ public class WildFlyMCPServer {
             CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
             ModelNode mn = ctx.buildRequest(operation);
             // TODO, implement possible rules if needed to disallow some operations.
-            String value = wildflyClient.call(server, user, mn.toJSONString(false));
+            String value = wildflyClient.call(server, user, mn.toJSONString(false), false);
             return buildResponse(value);
         } catch (Exception ex) {
             return handleException(ex, server, "invoking operations ");

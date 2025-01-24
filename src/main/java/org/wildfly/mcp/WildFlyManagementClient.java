@@ -58,7 +58,7 @@ public class WildFlyManagementClient {
             return " Deployment : " + address.get(address.size() - 1).get("deployment") + "\n, status " + result + ", outcome " + outcome;
         }
     }
-    
+
     public abstract static class ManagementRequest<R extends ManagementResponse> {
         
         public final List<String> address = new ArrayList<>();
@@ -67,12 +67,17 @@ public class WildFlyManagementClient {
         private final Server server;
         private final User user;
         private final Class<R> responseClass;
-        
+        private final boolean stream;
+
         protected ManagementRequest(Class<R> responseClass, String operation, Server server, User user) {
+            this(responseClass, operation, server, user, false);
+        }
+        protected ManagementRequest(Class<R> responseClass, String operation, Server server, User user, boolean stream) {
             this.responseClass = responseClass;
             this.operation = operation;
             this.server = server;
             this.user = user;
+            this.stream = stream;
         }
         
         String toJson() throws JsonProcessingException {
@@ -134,7 +139,14 @@ public class WildFlyManagementClient {
     public static class ReadConfigAsXmlRequest extends ManagementRequest<ReadConfigAsXmlResponse> {
         
         ReadConfigAsXmlRequest(Server server, User user) {
-            super(ReadConfigAsXmlResponse.class, "read-config-as-xml", server, user);
+            super(ReadConfigAsXmlResponse.class, "read-config-as-xml-file", server, user, true);
+        }
+
+        @Override
+        ReadConfigAsXmlResponse getResponse(String fileContent) throws JsonProcessingException {
+            ReadConfigAsXmlResponse resp = new ReadConfigAsXmlResponse();
+            resp.result = fileContent;
+            return resp;
         }
     }
     
@@ -230,14 +242,14 @@ public class WildFlyManagementClient {
     static Logger LOGGER = Logger.getLogger("org.wildfly.mcp.WildFlyManagementClient");
     
     public <T extends ManagementResponse> T call(ManagementRequest<T> request) throws Exception {
-       return request.getResponse(call(request.server, request.user, request.toJson()));
+       return request.getResponse(call(request.server, request.user, request.toJson(), request.stream));
         
     }
 
     public String call(Server server, User user, ParsedCommandLine parsedLine) throws Exception {
-        return call(server, user, toJSON(parsedLine));
+        return call(server, user, toJSON(parsedLine), false);
     }
-    public String call(Server server, User user, String json) throws Exception {
+    public String call(Server server, User user, String json, boolean stream) throws Exception {
         HttpClientBuilder builder = HttpClients.custom();
         if (user != null) {
             CredentialsProvider credsProvider = new BasicCredentialsProvider();
@@ -247,7 +259,7 @@ public class WildFlyManagementClient {
             builder.setDefaultCredentialsProvider(credsProvider);
         }
         try (CloseableHttpClient httpclient = builder.build()) {
-            HttpPost httppost = new HttpPost("http://" + server.host + ":" + server.port + "/management");
+            HttpPost httppost = new HttpPost("http://" + server.host + ":" + server.port + "/management" + (stream ? "/?useStreamAsResponse" : ""));
             StringEntity requestEntity = new StringEntity(
                     json,
                     ContentType.APPLICATION_JSON);
