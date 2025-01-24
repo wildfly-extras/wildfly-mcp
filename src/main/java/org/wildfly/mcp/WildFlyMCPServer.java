@@ -104,7 +104,7 @@ public class WildFlyMCPServer {
             builder.setHostName(server.host);
             builder.setPort(Integer.parseInt(server.port));
             builder.setHandler(new ClientCallbackHandler(user.userName, user.userPassword));
-            builder.setProtocol("http");
+            builder.setProtocol("remote+http");
            
             try(ModelControllerClient client = ModelControllerClient.Factory.create( builder.build())) {
                 final ModelNode request = new ModelNode();
@@ -120,9 +120,6 @@ public class WildFlyMCPServer {
                     throw new Exception("No server file available");
                 }
             }
-            
-            //ReadConfigAsXmlResponse response = wildflyClient.call(new ReadConfigAsXmlRequest(server, user));
-            //return buildResponse(""+response.result);
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the logging categories");
         }

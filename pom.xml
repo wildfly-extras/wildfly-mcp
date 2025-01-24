@@ -25,12 +25,6 @@
                 <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.threads</groupId>
-            <artifactId>jboss-threads</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -65,12 +59,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- This dependency breaks quarkus maven plugin, but would be required for  the Model Controller client to work. -->
-        <!--<dependency>
-            <groupId>org.jboss.threads</groupId>
-            <artifactId>jboss-threads</artifactId>
-            <version>2.4.0.Final</version>
-        </dependency>-->
         <dependency>
             <groupId>org.wildfly.core</groupId>
             <artifactId>wildfly-cli</artifactId>
@@ -103,15 +91,6 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${quarkus.platform.version}</version>
                 <extensions>true</extensions>
-                <dependencies>
-                    <!-- This doesn't override the jboss-threads located in dependencies -->
-                    <dependency>
-                        <groupId>org.jboss.threads</groupId>
-                        <artifactId>jboss-threads</artifactId>
-                        <version>3.8.0.Final</version>
-                        <scope>compile</scope>
-                    </dependency>
-                </dependencies>
                 <executions>
                     <execution>
                         <goals>
