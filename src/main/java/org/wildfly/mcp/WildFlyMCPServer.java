@@ -18,11 +18,13 @@ import io.quarkus.rest.client.reactive.Url;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.core.Response;
-import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
@@ -31,6 +33,12 @@ import org.apache.http.auth.AuthenticationException;
 import org.apache.http.conn.HttpHostConnectException;
 import org.jboss.as.cli.CommandContext;
 import org.jboss.as.cli.CommandContextFactory;
+import org.jboss.as.cli.Util;
+import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.as.controller.client.ModelControllerClientConfiguration;
+import org.jboss.as.controller.client.OperationBuilder;
+import org.jboss.as.controller.client.OperationMessageHandler;
+import org.jboss.as.controller.client.OperationResponse;
 import org.jboss.dmr.ModelNode;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.wildfly.mcp.User.NullUserException;
@@ -39,8 +47,6 @@ import org.wildfly.mcp.WildFlyManagementClient.GetLoggersRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggersResponse;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggingFileRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggingFileResponse;
-import org.wildfly.mcp.WildFlyManagementClient.ReadConfigAsXmlRequest;
-import org.wildfly.mcp.WildFlyManagementClient.ReadConfigAsXmlResponse;
 import org.wildfly.mcp.WildFlyManagementClient.RemoveLoggerRequest;
 
 public class WildFlyMCPServer {
@@ -94,13 +100,45 @@ public class WildFlyMCPServer {
         Server server = new Server(host, port);
         try {
             User user = new User(userName, userPassword);
-            ReadConfigAsXmlResponse response = wildflyClient.call(new ReadConfigAsXmlRequest(server, user));
-            return buildResponse(response.result);
+            ModelControllerClientConfiguration.Builder builder = new ModelControllerClientConfiguration.Builder();
+            builder.setHostName(server.host);
+            builder.setPort(Integer.parseInt(server.port));
+            builder.setHandler(new ClientCallbackHandler(user.userName, user.userPassword));
+            builder.setProtocol("http");
+           
+            try(ModelControllerClient client = ModelControllerClient.Factory.create( builder.build())) {
+                final ModelNode request = new ModelNode();
+                final ModelNode address = request.get(Util.ADDRESS);
+                request.get(Util.OPERATION).set("read-config-as-xml-file");
+                OperationBuilder opBuilder = new OperationBuilder(request, true);
+                OperationResponse response = client.executeOperation(opBuilder.build(), OperationMessageHandler.DISCARD);
+                Set<String> uuids = listStreams(response);
+                if (!uuids.isEmpty()) {
+                    String uuid = uuids.iterator().next();
+                    return buildResponse(getContent(response, uuid));
+                } else {
+                    throw new Exception("No server file available");
+                }
+            }
+            
+            //ReadConfigAsXmlResponse response = wildflyClient.call(new ReadConfigAsXmlRequest(server, user));
+            //return buildResponse(""+response.result);
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the logging categories");
         }
     }
-    
+    private String getContent(OperationResponse operationResponse, String uuid) throws IOException {
+        OperationResponse.StreamEntry stream = operationResponse.getInputStream(uuid);
+        return new String(stream.getStream().readAllBytes(), StandardCharsets.UTF_8);
+    }
+    private Set<String> listStreams(OperationResponse operationResponse) {
+        List<OperationResponse.StreamEntry> streams = operationResponse.getInputStreams();
+        Set<String> uuids = new HashSet<>(streams.size());
+        for (OperationResponse.StreamEntry stream : streams) {
+            uuids.add(stream.getUUID());
+        }
+        return uuids;
+    }
     @Tool(description = "Invoke a single WildFly CLI operation on the WildFly server running on the provided host and port arguments.")
     ToolResponse invokeWildFlyCLIOperation(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,

@@ -132,9 +132,9 @@ public class WildFlyManagementClient {
     }
     
     public static class ReadConfigAsXmlRequest extends ManagementRequest<ReadConfigAsXmlResponse> {
-        
+
         ReadConfigAsXmlRequest(Server server, User user) {
-            super(ReadConfigAsXmlResponse.class, "read-config-as-xml", server, user);
+            super(ReadConfigAsXmlResponse.class, "read-config-as-xml-file", server, user);
         }
     }
     
@@ -214,7 +214,7 @@ public class WildFlyManagementClient {
     
     public static class ReadConfigAsXmlResponse extends ManagementResponse {
         
-        public String result;
+        public Map<String, String> result;
     }
     
     public static class ReadDeploymentsStatusResponse extends ReadAttributeResponse {
