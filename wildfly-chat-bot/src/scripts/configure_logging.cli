@@ -1,0 +1,8 @@
+/subsystem=logging/logger=io.smallrye.llm:add(level=TRACE)
+/subsystem=logging/logger=dev.ai4j.openai4j:add(level=TRACE)
+/subsystem=logging/logger=dev.langchain4j.model.ollama:add(level=TRACE)
+/subsystem=logging/logger=org.wildfly.ai.chatbot:add(level=TRACE)
+/subsystem=logging/logger=org.jboss.resteasy:add(level=TRACE)
+/subsystem=logging/console-handler=CONSOLE:write-attribute(name=level,value=TRACE)
+
+/subsystem=undertow/server=default-server/http-listener=default:write-attribute(name=read-timeout, value=0)

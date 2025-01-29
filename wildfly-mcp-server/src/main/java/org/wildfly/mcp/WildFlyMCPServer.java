@@ -292,7 +292,7 @@ public class WildFlyMCPServer {
     }
     
     @Prompt(name = "Prometheus-metrics-chart", description = "Prometheus metrics chart")
-    PromptMessage prometheusMetricsChart() {
+    PromptMessage prometheusMetricsChart(@PromptArg(description = "arg1", required = true) String arg1, @PromptArg(description = "arg2", required = true) String arg2) {
         return PromptMessage.withUserRole(new TextContent("using available tools, get Prometheus metrics from wildfly server. " +
             "You will repeat the invocation 3 times, being sure to wait 2 seconds between each invocation. " + 
             "After all the 3 invocation has been completed you will organize the data in a table. " + 
