@@ -146,6 +146,7 @@ public class ChatBotWebSocketEndpoint {
         for (McpClient client : clients) {
             client.close();
         }
+        session.getBasicRemote().sendText("The session has been closed...");
     }
 
     // This method receives a Message that contains a command
