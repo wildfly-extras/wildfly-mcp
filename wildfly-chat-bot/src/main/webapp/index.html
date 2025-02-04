@@ -41,7 +41,7 @@
                         if (event.target !== null) {
                             if (event.target.msg.value !== "") {
                                 userContent(event.target.msg.value);
-                                socket.send(event.target.msg.value);
+                                socket.send(JSON.stringify({kind: "user_question", value: event.target.msg.value}));
                             }
                             form.reset();
                             scrollIt();
@@ -72,7 +72,7 @@
                     const cb = objDiv.querySelectorAll('chat-bubble[loading]')
                     if (cb.length == 0) {
                         if (event.target !== null) {
-                            socket.send("___###___tools");
+                            socket.send(JSON.stringify({kind: "list_tools"}));
                         }
                     }
                 });
@@ -95,26 +95,40 @@
                     if (cb.length > 0) {
                         cb[cb.length - 1].parentElement?.removeChild(cb[cb.length - 1])
                     }
-                    var txt = event.data;
-                    var loading = false;
-                    if (event.data.startsWith("___###___")) {
-                        txt = event.data.substring(9);
-                        loading = true;
-                    }
+                    const msg = JSON.parse(event.data);
                     let bubbleElement = document.createElement('chat-bubble');
-                    bubbleElement.innerHTML = txt;
+                    if (msg.kind === "simple_text") {
+                      bubbleElement.innerHTML = msg.value;
+                    } else {
+                        if (msg.kind === "tool_call") {
+                            bubbleElement.innerHTML ='<div class="code">called '+ msg.tool+msg.args + "</div>";
+                        }
+                    }
                     objDiv.appendChild(bubbleElement);
-                    let msgBubble = bubbleElement.shadowRoot.querySelectorAll("div.chat-bubble");
-                    msgBubble[0].style.maxWidth = "90%";
-                    if (loading) {
+                    configureBubble(bubbleElement);
+                    if (msg.loadingRequired) {
                         let bubbleElement2 = document.createElement('chat-bubble');
                         bubbleElement2.setAttribute("loading", "true");
                         objDiv.appendChild(bubbleElement2);
+                        configureBubble(bubbleElement2);
                     }
                     scrollIt();
                 }
             }
-
+            function configureUserBubble(bubbleElement) {
+                let msgBubble = bubbleElement.shadowRoot.querySelectorAll("div.chat-bubble");
+                msgBubble[0].style.maxWidth = "90%";
+            }
+            function configureBubble(bubbleElement) {
+                let msgBubble = bubbleElement.shadowRoot.querySelectorAll("div.chat-bubble");
+                msgBubble[0].style.maxWidth = "90%";
+                let avatar = bubbleElement.shadowRoot.querySelectorAll("div.avatar");
+                avatar[0].style.width = "100px";
+                avatar[0].style.backgroundColor = "transparent";
+                avatar[0].style.borderRadius = "0%";
+                let bubbleImg = bubbleElement.shadowRoot.querySelectorAll("img");
+                bubbleImg[0].src = "img/wildfly_icons_one-color-logo.png";
+            }
             function userContent(content) {
                 const objDiv = document.getElementById("chat-body");
                 let bubbleElement = document.createElement('chat-bubble');
@@ -122,13 +136,11 @@
 
                 bubbleElement.setAttribute("right", "true");
                 objDiv.appendChild(bubbleElement);
-                let msgBubble = bubbleElement.shadowRoot.querySelectorAll("div.chat-bubble");
-                msgBubble[0].style.maxWidth = "90%";
+                configureUserBubble(bubbleElement);
                 let bubbleElement2 = document.createElement('chat-bubble');
-
                 bubbleElement2.setAttribute("loading", "true");
-
                 objDiv.appendChild(bubbleElement2);
+                configureBubble(bubbleElement2);
                 scrollIt();
             }
 
@@ -136,7 +148,7 @@
         <style>
             :host {
                 --chatbot-avatar-bg-color: #F9A825;
-                --chatbot-avatar-img: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><rect x="45" y="55" width="110" height="100" rx="20" fill-opacity="0" stroke="rgba(76,76,76,1.0)" stroke-width="15"></rect><circle cx="75" cy="95" r="10" fill="rgba(76,76,76,1.0)"></circle><circle cx="125" cy="95" r="10" fill="rgba(76,76,76,1.0)"></circle><line x1="75" y1="125" x2="125" y2="125" stroke="rgba(76,76,76,1.0)" stroke-width="10"></line><ellipse cx="30" cy="95" rx="10" ry="10" fill="rgba(76,76,76,1.0)" stroke="rgba(76,76,76,1.0)" stroke-width="10"></ellipse><ellipse cx="170" cy="95" rx="10" ry="10" fill="rgba(76,76,76,1.0)" stroke="rgba(76,76,76,1.0)" stroke-width="10"></ellipse><circle cx="100" cy="30" r="10" fill="rgba(76,76,76,1.0)" stroke="rgba(76,76,76,1.0)" stroke-width="10"></circle><line x1="100" y1="35" x2="100" y2="55" stroke="rgba(76,76,76,1.0)" stroke-width="10"></line></svg>');
+                --chatbot-avatar-img: url("img/wildfly_icons_one-color-logo.png");
                 --chatbot-avatar-margin: 10%;
                 --chatbot-header-bg-color: #F9A825;
                 --chatbot-header-title-color: #FFFFFF;

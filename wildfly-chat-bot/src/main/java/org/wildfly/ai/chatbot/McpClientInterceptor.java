@@ -29,7 +29,7 @@ public class McpClientInterceptor implements McpClient {
     @Override
     public String executeTool(ToolExecutionRequest ter) {
         String ret = delegate.executeTool(ter);
-        endpoint.traceToolUsage(ter.name(), ter.arguments());
+        endpoint.traceToolUsage(ter.name(), ter.arguments(), ret);
         return ret;
     }
 

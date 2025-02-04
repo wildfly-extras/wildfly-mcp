@@ -4,6 +4,11 @@
  */
 package org.wildfly.ai.chatbot;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
@@ -28,6 +33,7 @@ import jakarta.websocket.server.ServerEndpoint;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerSSEConfig;
@@ -137,13 +143,33 @@ public class ChatBotWebSocketEndpoint {
     public void onOpen(Session session) throws IOException {
         this.session = session;
         logger.info("New websocket session opened: " + session.getId());
-        session.getBasicRemote().sendText("Hello, I am a WildFly chatbot that can interact with your WildFly servers, how can I help?");
+        Map<String, String> args = new HashMap<>();
+        args.put("kind", "simple_text");
+        args.put("value", "Hello, I am a WildFly chatbot that can interact with your WildFly servers, how can I help?");
+        session.getBasicRemote().sendText(toJson(args));
     }
 
-    void traceToolUsage(String tool, String args) {
+    String toJson(Object msg) throws JsonProcessingException {
+        ObjectWriter ow = new ObjectMapper().writer();
+        return ow.writeValueAsString(msg);
+    }
+
+    Map<String, String> toMap(String msg) throws Exception {
+        ObjectMapper om = new ObjectMapper();
+        return om.readValue(msg, new TypeReference<>() {
+        });
+    }
+
+    void traceToolUsage(String tool, String args, String reply) {
         try {
-            logger.info("Tool calling: " + tool + args);
-            session.getBasicRemote().sendText("___###___<div class=\"code\">called " + tool+args +"</div>");
+            logger.info("Tool calling: " + tool + args + " reply :" + reply);
+            Map<String, String> map = new HashMap<>();
+            map.put("kind", "tool_call");
+            map.put("tool", tool);
+            map.put("args", args);
+            map.put("reply", reply);
+            map.put("loadingRequired", "true");
+            session.getBasicRemote().sendText(toJson(map));
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -164,31 +190,9 @@ public class ChatBotWebSocketEndpoint {
     @OnMessage
     public String onMessage(String question, Session session) throws IOException {
         try {
-            if ("___###___help".equals(question)) {
-                StringBuilder help = new StringBuilder();
-                help.append("<p><b>/tools</b>: List tools" + "<br></p>");
-                help.append("<p><b>/prompt</b>: Get system prompt" + "<br></p>");
-                help.append("<p><b>/prompt-list</b>: List prompts" + "<br></p>");
-                help.append("<p><b>/prompt-run <prompt name></b>: Run the prompt" + "<br></p>");
-                return help.toString();
-            }
-            if ("___###___prompt-list".equals(question)) {
-                StringBuilder prompts = new StringBuilder();
-                for (Map.Entry<String, String> entry : promptHandler.getPrompts()) {
-                    prompts.append("<p><b>" + entry.getKey() + "</b>:" + entry.getValue() + "<br></p>");
-                }
-                return prompts.toString();
-            }
-            if (question.startsWith("___###___prompt-run")) {
-                String name = question.substring("/prompt-run".length());
-                String prompt = promptHandler.getPrompt(name.trim());
-                if (prompt == null) {
-                    return "Hoops...prompt " + name.trim() + " doesn't exist...";
-                } else {
-                    return bot.chat(prompt);
-                }
-            }
-            if ("___###___tools".equals(question)) {
+            Map<String, String> msg = toMap(question);
+            String kind = msg.get("kind");
+            if ("list_tools".equals(kind)) {
                 StringBuilder tools = new StringBuilder("Available tools (Thoses tools are callable by your LLM when it is computing replies):\n");
                 for (McpClient client : clients) {
                     List<ToolSpecification> specs = client.listTools();
@@ -196,12 +200,19 @@ public class ChatBotWebSocketEndpoint {
                         tools.append("<p><b>" + s.name() + "</b>: " + s.description() + "<br></p>");
                     }
                 }
-                return tools.toString();
+                Map<String, String> map = new HashMap<>();
+                map.put("kind", "simple_text");
+                map.put("value", tools.toString());
+                return toJson(map);
             }
-            if (question.startsWith("___###___")) {
-                return "Invalid help command " + question;
+            if ("user_question".equals(kind)) {
+                String reply = bot.chat(msg.get("value"));
+                Map<String, String> map = new HashMap<>();
+                map.put("kind", "simple_text");
+                map.put("value", reply);
+                return toJson(map);
             }
-            return bot.chat(question);
+            throw new Exception("Unknown message " + kind);
         } catch (Exception ex) {
             ex.printStackTrace();
             return "Arghhh...An internal error occured " + ex.toString();
