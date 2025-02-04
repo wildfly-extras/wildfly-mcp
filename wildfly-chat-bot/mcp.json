@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "wildfly": {
+            "command": "java",
+            "args": [ "-Dorg.wildfly.user.name=admin",
+                      "-Dorg.wildfly.user.password=admin",
+                     "-jar",
+                    "../wildfly-mcp-server/target/wildfly-mcp-server-1.0.0.Final-SNAPSHOT-runner.jar"]
+    }
+  }
+}
