@@ -1,6 +1,6 @@
 # WildFly Chat Bot
 
-A WildFly Chat Bot. This WildFly Bootable jar application is a web based UI allowing you to manage and monitor your WildFly servers using natural language.
+A WildFly Chat Bot. This WildFly Bootable jar application is a web based UI allowing you to interact with your WildFly servers using natural language.
 
 ![](img/chatbot-demo.png)
 
