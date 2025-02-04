@@ -5,13 +5,8 @@
 package org.wildfly.ai.chatbot;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import dev.langchain4j.mcp.client.protocol.ClientMethod;
 import dev.langchain4j.mcp.client.protocol.McpClientMessage;
 
-/**
- *
- * @author jdenise
- */
 public class ListPrompts extends McpClientMessage {
     @JsonInclude
     public final String method = "prompts/list";

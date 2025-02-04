@@ -9,10 +9,6 @@ import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.McpClient;
 import java.util.List;
 
-/**
- *
- * @author jdenise
- */
 public class McpClientInterceptor implements McpClient {
 
     private final McpClient delegate;

@@ -10,10 +10,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-/**
- *
- * @author jdenise
- */
 public class MCPConfig {
 
     public static class MCPServerStdioConfig {

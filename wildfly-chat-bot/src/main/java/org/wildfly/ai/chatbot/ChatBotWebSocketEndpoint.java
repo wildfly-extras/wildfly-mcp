@@ -39,15 +39,6 @@ import java.util.Map;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerSSEConfig;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerStdioConfig;
 
-/**
- * WebSocket server endpoint example
- * <p/>
- *
- * This class produces a Websocket endpoint to receive messages from clients.
- *
- * @author <a href="mailto:benevides@redhat.com">Rafael Benevides</a>
- *
- */
 @ServerEndpoint(value = "/chatbot",
         configurator = CustomConfigurator.class)
 public class ChatBotWebSocketEndpoint {

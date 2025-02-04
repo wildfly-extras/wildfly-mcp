@@ -14,10 +14,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-/**
- *
- * @author jdenise
- */
 public class PromptHandler {
 
     Map<String, String> prompts = new HashMap<>();
