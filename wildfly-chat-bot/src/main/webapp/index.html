@@ -95,12 +95,22 @@
                     if (cb.length > 0) {
                         cb[cb.length - 1].parentElement?.removeChild(cb[cb.length - 1])
                     }
+                    var txt = event.data;
+                    var loading = false;
+                    if (event.data.startsWith("___###___")) {
+                        txt = event.data.substring(9);
+                        loading = true;
+                    }
                     let bubbleElement = document.createElement('chat-bubble');
-                    bubbleElement.innerHTML = event.data;
+                    bubbleElement.innerHTML = txt;
                     objDiv.appendChild(bubbleElement);
                     let msgBubble = bubbleElement.shadowRoot.querySelectorAll("div.chat-bubble");
                     msgBubble[0].style.maxWidth = "90%";
-
+                    if (loading) {
+                        let bubbleElement2 = document.createElement('chat-bubble');
+                        bubbleElement2.setAttribute("loading", "true");
+                        objDiv.appendChild(bubbleElement2);
+                    }
                     scrollIt();
                 }
             }
@@ -132,6 +142,11 @@
                 --chatbot-header-title-color: #FFFFFF;
                 --chatbot-body-bg-color: #9dbfde;
                 --chatbot-send-button-color: #F9A825;
+            }
+            .code {
+                font-family: monospace ;
+                background-color: black;
+                color: white;
             }
             .chatbot-footer {
                 flex-grow: 0;

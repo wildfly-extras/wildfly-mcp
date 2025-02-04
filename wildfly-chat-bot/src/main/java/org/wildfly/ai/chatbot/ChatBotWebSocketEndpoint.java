@@ -10,7 +10,6 @@ import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
-import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.tool.ToolProvider;
@@ -60,6 +59,7 @@ public class ChatBotWebSocketEndpoint {
     private Bot bot;
     private List<McpClient> clients = new ArrayList<>();
     private List<McpTransport> transports = new ArrayList<>();
+    private Session session;
 
     // It starts a Thread that notifies all sessions each second
     @PostConstruct
@@ -83,7 +83,7 @@ public class ChatBotWebSocketEndpoint {
                             .transport(transport)
                             .clientName(entry.getKey())
                             .build();
-                    clients.add(mcpClient);
+                    clients.add(new McpClientInterceptor(mcpClient, this));
                 }
             }
             if (mcpConfig.mcpSSEServers != null) {
@@ -96,7 +96,7 @@ public class ChatBotWebSocketEndpoint {
                             .transport(transport)
                             .clientName(entry.getKey())
                             .build();
-                    clients.add(mcpClient);
+                    clients.add(new McpClientInterceptor(mcpClient, this));
                 }
             }
             ToolProvider toolProvider = McpToolProvider.builder()
@@ -135,8 +135,18 @@ public class ChatBotWebSocketEndpoint {
     // store the session once that it's opened
     @OnOpen
     public void onOpen(Session session) throws IOException {
+        this.session = session;
         logger.info("New websocket session opened: " + session.getId());
         session.getBasicRemote().sendText("Hello, I am a WildFly chatbot that can interact with your WildFly servers, how can I help?");
+    }
+
+    void traceToolUsage(String tool, String args) {
+        try {
+            logger.info("Tool calling: " + tool + args);
+            session.getBasicRemote().sendText("___###___<div class=\"code\">called " + tool+args +"</div>");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     // remove the session after it's closed
