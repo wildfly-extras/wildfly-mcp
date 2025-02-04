@@ -32,7 +32,7 @@
                 const chatFooter = document.createElement('div');
                 chatFooter.classList.add('chat-footer');
                 const form = document.createElement('form');
-                form.setAttribute("autocomplete", "off");
+                form.setAttribute("autocomplete", "on");
                 form.addEventListener('submit', (event) => {
                     event.preventDefault();
                     const objDiv = document.getElementById("chat-body");

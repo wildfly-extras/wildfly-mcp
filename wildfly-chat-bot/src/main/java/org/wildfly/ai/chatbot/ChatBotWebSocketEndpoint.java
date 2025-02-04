@@ -179,7 +179,7 @@ public class ChatBotWebSocketEndpoint {
                 }
             }
             if ("___###___tools".equals(question)) {
-                StringBuilder tools = new StringBuilder();
+                StringBuilder tools = new StringBuilder("Available tools (Thoses tools are callable by your LLM when it is computing replies):\n");
                 for (McpClient client : clients) {
                     List<ToolSpecification> specs = client.listTools();
                     for (ToolSpecification s : specs) {

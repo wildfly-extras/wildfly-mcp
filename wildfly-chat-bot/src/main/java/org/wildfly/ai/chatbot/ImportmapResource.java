@@ -40,8 +40,6 @@ public class ImportmapResource {
     void init() {
         Aggregator aggregator = new Aggregator();
         // Add our own mappings
-        aggregator.addMapping("icons/", "/icons/");
-        aggregator.addMapping("components/", "/components/");
         aggregator.addMapping("fonts/", "/fonts/");
         this.importmap = aggregator.aggregateAsJson();
     }
