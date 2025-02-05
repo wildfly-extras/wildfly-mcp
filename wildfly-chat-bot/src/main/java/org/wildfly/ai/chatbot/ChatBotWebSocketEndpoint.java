@@ -109,7 +109,7 @@ public class ChatBotWebSocketEndpoint {
                     model = ollama;
                 } else {
                     if (activellm.equals("openai")) {
-                        model = ollama;
+                        model = openai;
                     } else {
                         throw new RuntimeException("Unknown llm model " + activellm);
                     }
@@ -121,7 +121,7 @@ public class ChatBotWebSocketEndpoint {
                     .chatLanguageModel(model)
                     .toolProvider(toolProvider)
                     .systemMessageProvider(chatMemoryId -> {
-                        return promptHandler.getPrompt();
+                        return promptHandler.getSystemPrompt();
                     })
                     .build();
         } catch (Exception ex) {
@@ -158,7 +158,7 @@ public class ChatBotWebSocketEndpoint {
             map.put("kind", "tool_call");
             map.put("tool", tool);
             map.put("args", args);
-            map.put("reply", reply);
+            //map.put("reply", reply);
             map.put("loadingRequired", "true");
             session.getBasicRemote().sendText(toJson(map));
         } catch (IOException ex) {
@@ -198,6 +198,9 @@ public class ChatBotWebSocketEndpoint {
             }
             if ("user_question".equals(kind)) {
                 String reply = bot.chat(msg.get("value"));
+                if (reply == null || reply.isEmpty()) {
+                    reply = "I have not been able to answer your question.";
+                }
                 Map<String, String> map = new HashMap<>();
                 map.put("kind", "simple_text");
                 map.put("value", reply);
@@ -206,7 +209,10 @@ public class ChatBotWebSocketEndpoint {
             throw new Exception("Unknown message " + kind);
         } catch (Exception ex) {
             ex.printStackTrace();
-            return "Arghhh...An internal error occured " + ex.toString();
+            Map<String, String> map = new HashMap<>();
+            map.put("kind", "simple_text");
+            map.put("value", "Arghhh...An internal error occured " + ex.toString());
+            return toJson(map);
         }
     }
 

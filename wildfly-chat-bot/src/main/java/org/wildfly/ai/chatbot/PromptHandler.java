@@ -15,13 +15,17 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class PromptHandler {
-
+    private static final String SYSTEM_PROMPT="""
+                                              You are a smart AI agent that can answer any kind of questions. In addition, 
+            you have tools to interact with running WildFly servers and the users
+            will ask you to perform operations like getting status, readling log files, retrieving prometheus metrics.
+            """;
     Map<String, String> prompts = new HashMap<>();
-    private String prompt = "default";
     private final List<McpTransport> transports;
     Map<String, McpTransport> promptsTransport = new HashMap<>();
     public PromptHandler(List<McpTransport> transports) {
         this.transports = transports;
+        prompts.put("default", SYSTEM_PROMPT);
     }
 
     public Set<Entry<String, String>> getPrompts() throws Exception {
@@ -44,8 +48,8 @@ public class PromptHandler {
         return prompts.entrySet();
     }
 
-    public String getPrompt() {
-        return prompts.get("default");
+    public String getSystemPrompt() {
+        return SYSTEM_PROMPT;
     }
 
     public String getPrompt(String prompt) {
