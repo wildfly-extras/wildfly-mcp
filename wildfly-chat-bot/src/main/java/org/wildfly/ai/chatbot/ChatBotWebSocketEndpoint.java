@@ -51,6 +51,9 @@ public class ChatBotWebSocketEndpoint {
     @Inject
     @Named(value = "openai")
     ChatLanguageModel openai;
+    @Inject
+    @Named(value = "groq")
+    ChatLanguageModel groq;
     //@Inject Instance<ChatLanguageModel> instance;
     private PromptHandler promptHandler;
     private Bot bot;
@@ -111,7 +114,11 @@ public class ChatBotWebSocketEndpoint {
                     if (activellm.equals("openai")) {
                         model = openai;
                     } else {
-                        throw new RuntimeException("Unknown llm model " + activellm);
+                        if (activellm.equals("groq")) {
+                            model = groq;
+                        } else {
+                            throw new RuntimeException("Unknown llm model " + activellm);
+                        }
                     }
                 }
             } else {

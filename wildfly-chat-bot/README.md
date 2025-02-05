@@ -17,12 +17,12 @@ mvn clean install
 3) Start the chat bot using local `ollama`, once started it listens on port `8090`:
 
 ```
-OLLAMA_CHAT_MODEL_NAME=qwen2.5:3b GROQ_API_KEY=foo java -jar target/wildfly-chat-bot-bootable.jar -Djboss.socket.binding.port-offset=10
+OLLAMA_CHAT_MODEL_NAME=qwen2.5:3b java -jar target/wildfly-chat-bot-bootable.jar -Djboss.socket.binding.port-offset=10
 
 ```
 
 3) Start the chat bot using [groq](https://console.groq.com/docs/openai), once started it listens on port `8090`:
 
 ```
-OPENAI_CHAT_MODEL_NAME=llama3-70b-8192 GROQ_API_KEY=<Your groq key> java -jar target/wildfly-chat-bot-bootable.jar -Dorg.wildfly.ai.chatbot.llm.name=openai -Djboss.socket.binding.port-offset=10
+OPENAI_CHAT_MODEL_NAME=llama3-70b-8192 GROQ_API_KEY=<Your groq key> java -jar target/wildfly-chat-bot-bootable.jar -Dorg.wildfly.ai.chatbot.llm.name=groq -Djboss.socket.binding.port-offset=10
 ```
