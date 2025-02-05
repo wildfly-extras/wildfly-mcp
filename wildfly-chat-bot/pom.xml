@@ -24,8 +24,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jakartaee>10.0.0</jakartaee>
         <version.wildfly.maven.plugin>5.1.1.Final</version.wildfly.maven.plugin>
-        <version.wildfly.server>35.0.0.Final</version.wildfly.server>
-        <version.wildfly.ai.feature.pack>0.3.2</version.wildfly.ai.feature.pack>
+        <version.wildfly.server>35.0.1.Final</version.wildfly.server>
         <version.dev.langchain4j>1.0.0-alpha1</version.dev.langchain4j>
         <version.compiler.plugin>3.13.0</version.compiler.plugin>
         <version.war.plugin>3.4.0</version.war.plugin>
@@ -102,20 +101,12 @@
                 <artifactId>wildfly-maven-plugin</artifactId>
                 <version>${version.wildfly.maven.plugin}</version>
                 <configuration>
-                    <feature-packs>
-                        <feature-pack>
-                            <location>org.wildfly:wildfly-galleon-pack:${version.wildfly.server}</location>
-                        </feature-pack>
-                        <feature-pack>
-                            <location>org.wildfly:wildfly-ai-feature-pack:${version.wildfly.ai.feature.pack}</location>
-                        </feature-pack>
-                    </feature-packs>
-                    <layers>
-                        <layer>ee-core-profile-server</layer>
-                        <layer>jaxrs</layer>
-                        <layer>ollama-chat-model</layer>
-                        <layer>openai-chat-model</layer>
-                    </layers>
+                    <discoverProvisioningInfo>
+                        <version>35.0.1.Final</version>
+                        <spaces>
+                            <space>incubating</space>
+                        </spaces>
+                    </discoverProvisioningInfo>
                     <name>ROOT.war</name>
                     <bootableJar>true</bootableJar>
                     <packagingScripts>

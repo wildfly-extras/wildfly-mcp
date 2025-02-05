@@ -7,7 +7,6 @@ package org.wildfly.ai.chatbot;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.McpToolProvider;
@@ -51,6 +50,9 @@ public class ChatBotWebSocketEndpoint {
     @Inject
     @Named(value = "openai")
     ChatLanguageModel openai;
+    @Inject
+    @Named(value = "groq")
+    ChatLanguageModel groq;
     //@Inject Instance<ChatLanguageModel> instance;
     private PromptHandler promptHandler;
     private Bot bot;
@@ -111,7 +113,11 @@ public class ChatBotWebSocketEndpoint {
                     if (activellm.equals("openai")) {
                         model = openai;
                     } else {
-                        throw new RuntimeException("Unknown llm model " + activellm);
+                        if (activellm.equals("groq")) {
+                            model = groq;
+                        } else {
+                            throw new RuntimeException("Unknown llm model " + activellm);
+                        }
                     }
                 }
             } else {
@@ -188,7 +194,7 @@ public class ChatBotWebSocketEndpoint {
                 for (McpClient client : clients) {
                     List<ToolSpecification> specs = client.listTools();
                     for (ToolSpecification s : specs) {
-                        tools.append("<p><b>" + s.name() + "</b>: " + s.description() + "<br></p>");
+                        tools.append("* **" + s.name() + "**: " + s.description() + "\n");
                     }
                 }
                 Map<String, String> map = new HashMap<>();
