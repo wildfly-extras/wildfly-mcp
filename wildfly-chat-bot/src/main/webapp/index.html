@@ -7,6 +7,7 @@
 
         <title>WildFly Chat Bot</title>
         <script src="/rest/_importmap/dynamic-importmap.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
         <!-- End Load -->
         <script type="module">
             import 'wc-bubble';
@@ -98,7 +99,7 @@
                     const msg = JSON.parse(event.data);
                     let bubbleElement = document.createElement('chat-bubble');
                     if (msg.kind === "simple_text") {
-                      bubbleElement.innerHTML = msg.value;
+                      bubbleElement.innerHTML = marked.parse(msg.value);
                     } else {
                         if (msg.kind === "tool_call") {
                             bubbleElement.innerHTML ='<div class="code">called '+ msg.tool+msg.args + "</div>";

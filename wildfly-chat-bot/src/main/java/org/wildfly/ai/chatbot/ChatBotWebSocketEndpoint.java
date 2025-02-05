@@ -7,7 +7,6 @@ package org.wildfly.ai.chatbot;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.McpToolProvider;
@@ -195,7 +194,7 @@ public class ChatBotWebSocketEndpoint {
                 for (McpClient client : clients) {
                     List<ToolSpecification> specs = client.listTools();
                     for (ToolSpecification s : specs) {
-                        tools.append("<p><b>" + s.name() + "</b>: " + s.description() + "<br></p>");
+                        tools.append("* **" + s.name() + "**: " + s.description() + "\n");
                     }
                 }
                 Map<String, String> map = new HashMap<>();
