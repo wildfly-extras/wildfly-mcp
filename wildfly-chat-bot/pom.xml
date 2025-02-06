@@ -19,15 +19,14 @@
     <name>WildFly Chat Bot</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jdk.min.version>17</jdk.min.version>
+        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.target>${maven.compiler.release}</maven.compiler.target>
+        <maven.compiler.source>${maven.compiler.release}</maven.compiler.source>
         <jakartaee>10.0.0</jakartaee>
         <version.wildfly.maven.plugin>5.1.1.Final</version.wildfly.maven.plugin>
         <version.wildfly.server>35.0.1.Final</version.wildfly.server>
         <version.dev.langchain4j>1.0.0-beta1</version.dev.langchain4j>
-        <version.compiler.plugin>3.13.0</version.compiler.plugin>
-        <version.war.plugin>3.4.0</version.war.plugin>
     </properties>
 
     <licenses>
@@ -76,33 +75,13 @@
 
     <build>
         <plugins>
-            <!--Configuration of the maven-compiler-plugin -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${version.compiler.plugin}</version>
-                <configuration></configuration>
-            </plugin>
-
-            <!--Build configuration for the WAR plugin: -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>${version.war.plugin}</version>
-                <configuration>
-                    <!-- Jakarta EE doesn't require web.xml, Maven needs to catch up! -->
-                    <failOnMissingWebXml>false</failOnMissingWebXml>
-                </configuration>
-            </plugin>
-
-            <!-- The WildFly plugin deploys your war to a local JBoss AS container -->
             <plugin>
                 <groupId>org.wildfly.plugins</groupId>
                 <artifactId>wildfly-maven-plugin</artifactId>
                 <version>${version.wildfly.maven.plugin}</version>
                 <configuration>
                     <discoverProvisioningInfo>
-                        <version>35.0.1.Final</version>
+                        <version>${version.wildfly.server}</version>
                         <spaces>
                             <space>incubating</space>
                         </spaces>
@@ -112,41 +91,11 @@
                     <packagingScripts>
                         <packaging-script>
                             <scripts>
-                                <script>./src/scripts/configure_logging.cli</script>
+                                <script>./src/scripts/configure_server.cli</script>
                             </scripts>
                         </packaging-script>
                     </packagingScripts>
                 </configuration>
-                <!--              <configuration>
-                    <feature-packs>
-                        <feature-pack>
-                            <location>org.wildfly:wildfly-galleon-pack:${version.wildfly.server}</location>
-                        </feature-pack>
-                        <feature-pack>
-                            <location>org.wildfly:wildfly-ai-feature-pack:${version.wildfly.ai.feature.pack}</location>
-                        </feature-pack>
-                    </feature-packs>
-                    <layers>
-                        <layer>jaxrs-server</layer>
-                        <layer>ee-core-profile-server</layer>
-                        <layer>jaxrs</layer>
-                        <layer>opentelemetry</layer>
-                        <layer>ollama-chat-model</layer>
-                        <layer>default-embedding-content-retriever</layer>
-                    </layers>
-                    <name>ROOT.war</name>
-                    <extraServerContentDirs>
-                        <extraServerContentDir>extra-content</extraServerContentDir>
-                    </extraServerContentDirs>
-                    <packagingScripts>
-                        <packaging-script>
-                            <scripts>
-                                <script>./src/scripts/configure_llm.cli</script>
-                                <script>./src/scripts/disable_opentelemetry.cli</script>
-                            </scripts>
-                        </packaging-script>
-                    </packagingScripts>
-                </configuration>-->
                 <executions>
                     <execution>
                         <goals>
@@ -157,77 +106,4 @@
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <profile>
-            <id>opentelemetry</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.wildfly.plugins</groupId>
-                        <artifactId>wildfly-maven-plugin</artifactId>
-                        <version>${version.wildfly.maven.plugin}</version>
-                        <configuration>
-                            <discoverProvisioningInfo>
-                                <layersForJndi>
-                                    <layer>opentelemetry</layer>
-                                </layersForJndi>
-                                <spaces>
-                                    <space>incubating</space>
-                                </spaces>
-                                <version>${version.wildfly.server}</version>
-                            </discoverProvisioningInfo>
-                            <name>ROOT.war</name>
-                            <extraServerContentDirs>
-                                <extraServerContentDir>extra-content</extraServerContentDir>
-                            </extraServerContentDirs>
-                            <packagingScripts>
-                                <packaging-script>
-                                    <scripts>
-                                        <script>./src/scripts/configure_llm.cli</script>
-                                        <script>./src/scripts/configure_opentelemetry.cli</script>
-                                    </scripts>
-                                </packaging-script>
-                            </packagingScripts>
-                        </configuration>
-                        <!--                    <configuration>
-                            <feature-packs>
-                                <feature-pack>
-                                    <location>org.wildfly:wildfly-galleon-pack:${version.wildfly.server}</location>
-                                </feature-pack>
-                                <feature-pack>
-                                    <location>org.wildfly:wildfly-ai-feature-pack:${version.wildfly.ai.feature.pack}</location>
-                                </feature-pack>
-                            </feature-packs>
-                            <layers>
-                                <layer>ee-core-profile-server</layer>
-                                <layer>jaxrs</layer>
-                                <layer>opentelemetry</layer>
-                                <layer>ollama-chat-model</layer>
-                                <layer>default-embedding-content-retriever</layer>
-                            </layers>
-                            <name>ROOT.war</name>
-                            <extraServerContentDirs>
-                                <extraServerContentDir>extra-content</extraServerContentDir>
-                            </extraServerContentDirs>
-                            <packagingScripts>
-                                <packaging-script>
-                                    <scripts>
-                                        <script>./src/scripts/configure_llm.cli</script>
-                                        <script>./src/scripts/configure_opentelemetry.cli</script>
-                                    </scripts>
-                                </packaging-script>
-                            </packagingScripts>
-                        </configuration>-->
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>package</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
