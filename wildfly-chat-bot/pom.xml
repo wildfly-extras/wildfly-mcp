@@ -25,7 +25,7 @@
         <jakartaee>10.0.0</jakartaee>
         <version.wildfly.maven.plugin>5.1.1.Final</version.wildfly.maven.plugin>
         <version.wildfly.server>35.0.1.Final</version.wildfly.server>
-        <version.dev.langchain4j>1.0.0-alpha1</version.dev.langchain4j>
+        <version.dev.langchain4j>1.0.0-beta1</version.dev.langchain4j>
         <version.compiler.plugin>3.13.0</version.compiler.plugin>
         <version.war.plugin>3.4.0</version.war.plugin>
     </properties>
