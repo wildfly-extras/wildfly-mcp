@@ -14,6 +14,7 @@ import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
+import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.tool.ToolProvider;
@@ -73,7 +74,7 @@ public class ChatBotWebSocketEndpoint {
                     List<String> cmd = new ArrayList<>();
                     cmd.add(entry.getValue().command);
                     cmd.addAll(entry.getValue().args);
-                    McpTransport transport = new FixMcpProtocol.Builder()
+                    McpTransport transport = new StdioMcpTransport.Builder()
                             .command(cmd)
                             .logEvents(true)
                             .build();
