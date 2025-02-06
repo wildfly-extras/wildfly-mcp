@@ -36,6 +36,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.logging.Level;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerSSEConfig;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerStdioConfig;
 
@@ -43,7 +48,7 @@ import org.wildfly.ai.chatbot.MCPConfig.MCPServerStdioConfig;
         configurator = CustomConfigurator.class)
 public class ChatBotWebSocketEndpoint {
 
-    private Logger logger = Logger.getLogger(getClass().getName());
+    private static final Logger logger = Logger.getLogger(ChatBotWebSocketEndpoint.class.getName());
 
     @Inject
     @Named(value = "ollama")
@@ -58,8 +63,10 @@ public class ChatBotWebSocketEndpoint {
     private PromptHandler promptHandler;
     private Bot bot;
     private List<McpClient> clients = new ArrayList<>();
-    private List<McpTransport> transports = new ArrayList<>();
+    private final List<McpTransport> transports = new ArrayList<>();
     private Session session;
+    private final ExecutorService executor = Executors.newFixedThreadPool(1);
+    private final BlockingQueue<String> workQueue = new ArrayBlockingQueue<>(1);
 
     // It starts a Thread that notifies all sessions each second
     @PostConstruct
@@ -147,7 +154,7 @@ public class ChatBotWebSocketEndpoint {
         session.getBasicRemote().sendText(toJson(args));
     }
 
-    String toJson(Object msg) throws JsonProcessingException {
+    public static String toJson(Object msg) throws JsonProcessingException {
         ObjectWriter ow = new ObjectMapper().writer();
         return ow.writeValueAsString(msg);
     }
@@ -158,11 +165,11 @@ public class ChatBotWebSocketEndpoint {
         });
     }
 
-    void traceToolUsage(String tool, String args, String reply) {
+    void traceToolCalled(String tool, String args, String reply) {
         try {
-            logger.info("Tool calling: " + tool + args + " reply :" + reply);
+            logger.info("Tool called: " + tool + args + " reply :" + reply);
             Map<String, String> map = new HashMap<>();
-            map.put("kind", "tool_call");
+            map.put("kind", "tool_called");
             map.put("tool", tool);
             map.put("args", args);
             //map.put("reply", reply);
@@ -171,6 +178,23 @@ public class ChatBotWebSocketEndpoint {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+    }
+
+    boolean canCallTool(String tool, String args) {
+        try {
+            logger.info("Can call: " + tool + args);
+            Map<String, String> map = new HashMap<>();
+            map.put("kind", "tool_calling");
+            map.put("tool", tool);
+            map.put("args", args);
+            session.getBasicRemote().sendText(toJson(map));
+            String reply = workQueue.take();
+            logger.info("Unlocked in waiting thread: " + reply);
+            return Boolean.parseBoolean(reply);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return false;
     }
 
     // remove the session after it's closed
@@ -186,7 +210,7 @@ public class ChatBotWebSocketEndpoint {
     // This method receives a Message that contains a command
     // The Message object is "decoded" by the MessageDecoder class
     @OnMessage
-    public String onMessage(String question, Session session) throws IOException {
+    public void onMessage(String question, Session session) throws IOException {
         try {
             Map<String, String> msg = toMap(question);
             String kind = msg.get("kind");
@@ -201,17 +225,44 @@ public class ChatBotWebSocketEndpoint {
                 Map<String, String> map = new HashMap<>();
                 map.put("kind", "simple_text");
                 map.put("value", tools.toString());
-                return toJson(map);
+                session.getBasicRemote().sendText(toJson(map));
+                return;
             }
             if ("user_question".equals(kind)) {
-                String reply = bot.chat(msg.get("value"));
-                if (reply == null || reply.isEmpty()) {
-                    reply = "I have not been able to answer your question.";
+                executor.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            String reply = bot.chat(msg.get("value"));
+                            if (reply == null || reply.isEmpty()) {
+                                reply = "I have not been able to answer your question.";
+                            }
+                            Map<String, String> map = new HashMap<>();
+                            map.put("kind", "simple_text");
+                            map.put("value", reply);
+                            session.getBasicRemote().sendText(toJson(map));
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            Map<String, String> map = new HashMap<>();
+                            map.put("kind", "simple_text");
+                            map.put("value", "Arghhh...An internal error occured " + ex.toString());
+                            try {
+                                session.getBasicRemote().sendText(toJson(map));
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                logger.log(Level.SEVERE, "Error: " + e);
+                            }
+                        }
+                    }
                 }
-                Map<String, String> map = new HashMap<>();
-                map.put("kind", "simple_text");
-                map.put("value", reply);
-                return toJson(map);
+                );
+                return;
+            }
+            if ("tool_acceptance_reply".equals(kind)) {
+                String reply = msg.get("value");
+                logger.info("Received tool acceptance message: " + reply);
+                workQueue.offer(reply);
+                return;
             }
             throw new Exception("Unknown message " + kind);
         } catch (Exception ex) {
@@ -219,7 +270,7 @@ public class ChatBotWebSocketEndpoint {
             Map<String, String> map = new HashMap<>();
             map.put("kind", "simple_text");
             map.put("value", "Arghhh...An internal error occured " + ex.toString());
-            return toJson(map);
+            session.getBasicRemote().sendText(toJson(map));
         }
     }
 
