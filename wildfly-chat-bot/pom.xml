@@ -106,4 +106,42 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>cloud</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.wildfly.plugins</groupId>
+                        <artifactId>wildfly-maven-plugin</artifactId>
+                        <version>${version.wildfly.maven.plugin}</version>
+                        <configuration combine.self="override">
+                            <discoverProvisioningInfo>
+                                <version>${version.wildfly.server}</version>
+                                <context>cloud</context>
+                                <spaces>
+                                    <space>incubating</space>
+                                </spaces>
+                            </discoverProvisioningInfo>
+                            <name>ROOT.war</name>
+                            <packagingScripts>
+                                <packaging-script>
+                                    <scripts>
+                                        <script>./src/scripts/configure_cloud_server.cli</script>
+                                    </scripts>
+                                </packaging-script>
+                            </packagingScripts>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>package</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

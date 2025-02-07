@@ -1,0 +1,10 @@
+ARG runtime_image=quay.io/wildfly/wildfly-runtime:latest
+
+FROM ${runtime_image}
+COPY --chown=jboss:root server $JBOSS_HOME
+RUN chmod -R ug+rwX $JBOSS_HOME
+COPY --chown=jboss:root wildfly-mcp-server-runner.jar $JBOSS_HOME
+COPY --chown=jboss:root mcp.json $JBOSS_HOME
+
+ENV WILDFLY_CHAT_BOT_MCP_FILE="$JBOSS_HOME/mcp.json"
+ENV DISABLE_BOOT_SCRIPT_INVOKER="true"

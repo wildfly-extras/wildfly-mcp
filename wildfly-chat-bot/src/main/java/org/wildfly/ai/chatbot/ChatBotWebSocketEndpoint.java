@@ -73,7 +73,7 @@ public class ChatBotWebSocketEndpoint {
     public void init() {
         try {
             logger.info("Initialize");
-            Path p = Paths.get(System.getProperty("org.wildfly.ai.chatbot.mcp.config", "./mcp.json"));
+            Path p = ChatBotConfig.getMCPConfigPath();
             MCPConfig mcpConfig = MCPConfig.parseConfig(p);
             clients = new ArrayList<>();
             if (mcpConfig.mcpServers != null) {
@@ -110,9 +110,7 @@ public class ChatBotWebSocketEndpoint {
                     .mcpClients(clients)
                     .build();
             promptHandler = new PromptHandler(transports);
-            //Instance<ChatLanguageModel> model = CDI.current().select(ChatLanguageModel.class, NamedLiteral.of(System.getProperty("org.wildfly.ai.chatbot.llm.name", "ollama")));
-            //ChatLanguageModel model = instance.select(NamedLiteral.of("openai")).get();
-            String activellm = System.getProperty("org.wildfly.ai.chatbot.llm.name", "ollama");
+            String activellm = ChatBotConfig.getActiveLLMModel();
             ChatLanguageModel model = null;
             if (activellm != null) {
                 if (activellm.equals("ollama")) {

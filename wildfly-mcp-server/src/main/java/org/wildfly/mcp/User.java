@@ -14,10 +14,16 @@ public class User {
 
     public User(String userName, String userPassword) {
         if (userName == null || userName.trim().isEmpty()) {
-            userName = System.getProperty("org.wildfly.user.name");
+            userName = System.getenv("WILDFLY_MCP_SERVER_USER_NAME");
+            if (userName == null) {
+                userName = System.getProperty("org.wildfly.user.name");
+            }
         }
         if (userPassword == null || userPassword.trim().isEmpty()) {
-            userPassword = System.getProperty("org.wildfly.user.password");
+            userPassword = System.getenv("WILDFLY_MCP_SERVER_USER_PASSWORD");
+            if (userPassword == null) {
+                userPassword = System.getProperty("org.wildfly.user.password");
+            }
         }
         this.userName = userName;
         this.userPassword = userPassword;

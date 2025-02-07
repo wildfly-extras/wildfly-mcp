@@ -29,6 +29,15 @@ This chatbot has also been tried with the `llama3.2:3b` and provided good result
 GROQ_CHAT_MODEL_NAME=llama3-70b-8192 GROQ_API_KEY=<Your groq key> java -jar target/wildfly-chat-bot-bootable.jar -Dorg.wildfly.ai.chatbot.llm.name=groq
 ```
 
+## Configuring the WildFly chatbot
+
+| Env Variable    | Description |
+| -------- | ------- |
+| WILDFLY_CHAT_BOT_MCP_FILE  | Absolute path to the mcp.json file    |
+| WILDFLY_CHAT_BOT_LLM_MODEL  | The acyive model (`ollama` or `groq`)    |
+| WILDFLY_MCP_SERVER_USER_NAME  | The default user name to use when connecting to WildFly server |
+| WILDFLY_MCP_SERVER_USER_PASSWORD  | The default user password to use when connecting to WildFly server |
+
 ## Configuring the WildFly chatbot for ollama
 
 | Env Variable    | Description |
