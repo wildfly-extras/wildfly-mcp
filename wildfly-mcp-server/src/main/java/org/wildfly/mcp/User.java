@@ -9,16 +9,10 @@ package org.wildfly.mcp;
  * @author jdenise
  */
 public class User {
-
-    public static class NullUserException extends Exception {
-        NullUserException(String message) {
-            super(message);
-        }
-    }
     public final String userName;
     public final String userPassword;
 
-    public User(String userName, String userPassword) throws NullUserException {
+    public User(String userName, String userPassword) {
         if (userName == null || userName.trim().isEmpty()) {
             userName = System.getProperty("org.wildfly.user.name");
         }
@@ -27,11 +21,5 @@ public class User {
         }
         this.userName = userName;
         this.userPassword = userPassword;
-        if(this.userName == null || this.userName.isEmpty()) {
-            throw new NullUserException("User Name is required.");
-        }
-        if(this.userPassword == null || this.userPassword.isEmpty()) {
-            throw new NullUserException("User Password is required.");
-        }
     }
 }
