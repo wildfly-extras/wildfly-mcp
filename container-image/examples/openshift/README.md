@@ -33,6 +33,3 @@ echo https://$(oc get route wildfly-chat-bot --template='{{ .spec.host }}')
 ## Configuring the WildFly chat bot
 
 The env variables defined in the [WildFly chat bot README](../../../wildfly-chat-bot/README.md) can be used.
-
-In addition you can use the `PORT_OFFSET=<port offset>` env variable to change the default `8080` and `9990` ports that could conflict with 
-the locally running WildFly servers.
