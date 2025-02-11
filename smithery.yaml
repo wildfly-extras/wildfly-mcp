@@ -1,0 +1,29 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - userName
+      - password
+    properties:
+      userName:
+        type: string
+        description: The admin username for WildFly server.
+      password:
+        type: string
+        description: The admin password for WildFly server.
+      host:
+        type: string
+        default: localhost
+        description: The hostname for the WildFly server.
+      port:
+        type: number
+        default: 9990
+        description: The port number for the WildFly server.
+  commandFunction:
+    # A function that produces the CLI command to start the MCP on stdio.
+    |-
+    config => ({command: 'java', args: [`-Dorg.wildfly.user.name=${config.userName}`, `-Dorg.wildfly.user.password=${config.password}`, `-Dorg.wildfly.host.name=${config.host || 'localhost'}`, `-Dorg.wildfly.port=${config.port || 9990}`, '-jar', 'target/wildfly-mcp-server-1.0.0.Final-SNAPSHOT-runner.jar']})
