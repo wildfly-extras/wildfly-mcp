@@ -7,9 +7,7 @@ package org.wildfly.mcp;
 import com.sun.management.OperatingSystemMXBean;
 
 import io.quarkiverse.mcp.server.Prompt;
-import io.quarkiverse.mcp.server.PromptArg;
 import io.quarkiverse.mcp.server.PromptMessage;
-import io.quarkiverse.mcp.server.PromptResponse;
 import io.quarkiverse.mcp.server.TextContent;
 import java.util.List;
 
@@ -37,7 +35,6 @@ import org.jboss.as.cli.CommandContext;
 import org.jboss.as.cli.CommandContextFactory;
 import org.jboss.dmr.ModelNode;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
-import org.wildfly.mcp.User.NullUserException;
 import org.wildfly.mcp.WildFlyManagementClient.AddLoggerRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggersRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggersResponse;
@@ -198,8 +195,8 @@ public class WildFlyMCPServer {
             @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
         Server server = new Server(host, port);
         try {
-            String consumedMemory = getWildFlyConsumedMemory(host, port).content().get(0).asText().text();
-            String cpuUsage = getWildFlyConsumedCPU(host, port).content().get(0).asText().text();
+            String consumedMemory = getWildFlyConsumedMemory(host, port, userName, userPassword).content().get(0).asText().text();
+            String cpuUsage = getWildFlyConsumedCPU(host, port, userName, userPassword).content().get(0).asText().text();
             // First attempt with health check.
             String url = "http://" + server.host + ":" + server.port + "/health";
             String state = null;
@@ -232,10 +229,13 @@ public class WildFlyMCPServer {
     @Tool(description = "Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.")
     ToolResponse getWildFlyConsumedMemory(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
+            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
         Server server = new Server(host, port);
+        User user = new User(userName, userPassword);
         try {
-            try (JMXSession session = new JMXSession(server)) {
+            try (JMXSession session = new JMXSession(server, user)) {
                 MemoryMXBean proxy
                         = ManagementFactory.newPlatformMXBeanProxy(session.connection,
                                 ManagementFactory.MEMORY_MXBEAN_NAME,
@@ -254,10 +254,13 @@ public class WildFlyMCPServer {
     @Tool(description = "Get the percentage of cpu consumed by the WildFly server running on the provided host and port arguments.")
     ToolResponse getWildFlyConsumedCPU(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
+            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
         Server server = new Server(host, port);
+        User user = new User(userName, userPassword);
         try {
-            try (JMXSession session = new JMXSession(server)) {
+            try (JMXSession session = new JMXSession(server, user)) {
                 OperatingSystemMXBean proxy
                         = ManagementFactory.newPlatformMXBeanProxy(session.connection,
                                 ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME,
@@ -315,6 +318,7 @@ public class WildFlyMCPServer {
     }
     
     private String findCategory(String category) {
+        category = category.toLowerCase();
         if (category.contains("security")) {
             return "org.wildfly.security";
         } else {
@@ -356,15 +360,10 @@ public class WildFlyMCPServer {
                     if (ex instanceof UnknownHostException) {
                         return buildErrorResponse("The server host " + server.host + " is not a known server name");
                     } else {
-                        if (ex instanceof NullUserException) {
-                            return buildErrorResponse("A user name and password are required to interact with WildFly management entrypoint.");
-                        } else {
-                            return buildErrorResponse(ex.getMessage());
-                        }
+                        return buildErrorResponse(ex.getMessage());
                     }
                 }
             }
-            
         }
     }
     

@@ -1,0 +1,11 @@
+build:
+  uri: https://github.com/wildfly/quickstart.git
+  ref: 35.0.0.Final
+  contextDir: helloworld
+deploy:
+  replicas: 1
+  env:
+    - name: ADMIN_USERNAME
+      value: "admin"
+    - name: ADMIN_PASSWORD
+      value: "admin"

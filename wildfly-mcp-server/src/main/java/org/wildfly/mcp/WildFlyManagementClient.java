@@ -251,7 +251,7 @@ public class WildFlyManagementClient {
     }
     public String call(Server server, User user, String json, boolean stream) throws Exception {
         HttpClientBuilder builder = HttpClients.custom();
-        if (user != null) {
+        if (user != null && user.userName != null && user.userPassword != null) {
             CredentialsProvider credsProvider = new BasicCredentialsProvider();
             credsProvider.setCredentials(
                     new AuthScope(server.host, Integer.parseInt(server.port), "ManagementRealm", "digest"),

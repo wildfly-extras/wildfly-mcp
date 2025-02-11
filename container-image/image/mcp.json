@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "wildfly": {
+            "command": "java",
+            "args": [ "-jar",
+                    "/opt/server/wildfly-mcp-server-runner.jar"]
+    }
+  }
+}

@@ -1,0 +1,74 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ollama-storage-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+  volumeMode: Filesystem
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+      - name: ollama
+        resources:
+          limits:
+            memory: 8Gi
+          requests:
+            memory: 8Gi
+        env:
+          - name: OLLAMA_HOST
+            value: "0.0.0.0"
+          - name: OLLAMA_ORIGINS
+            value: "http://wildfly-chat-bot"
+          - name: MODEL_ID
+            value: "qwen2.5:3b"
+          - name: OLLAMA_KEEP_ALIVE
+            value: "-1"
+        lifecycle:
+            postStart:
+              exec:
+                command:
+                  - "/bin/sh"
+                  - "-c"
+                  - "/bin/ollama pull $MODEL_ID" 
+        image: mirror.gcr.io/ollama/ollama:latest
+        ports:
+        - containerPort: 11434
+        volumeMounts:
+        - name: ollama-data
+          mountPath: /.ollama 
+        tty: true
+      volumes:
+      - name: ollama-data
+        persistentVolumeClaim:
+          claimName: ollama-storage-claim
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+spec:
+  ports:
+  - protocol: TCP
+    port: 11434
+    targetPort: 11434
+  selector:
+    app: ollama

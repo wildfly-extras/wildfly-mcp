@@ -31,7 +31,6 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,8 +43,7 @@ import java.util.logging.Level;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerSSEConfig;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerStdioConfig;
 
-@ServerEndpoint(value = "/chatbot",
-        configurator = CustomConfigurator.class)
+@ServerEndpoint(value = "/chatbot")
 public class ChatBotWebSocketEndpoint {
 
     private static final Logger logger = Logger.getLogger(ChatBotWebSocketEndpoint.class.getName());
@@ -68,12 +66,11 @@ public class ChatBotWebSocketEndpoint {
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
     private final BlockingQueue<String> workQueue = new ArrayBlockingQueue<>(1);
 
-    // It starts a Thread that notifies all sessions each second
     @PostConstruct
     public void init() {
         try {
             logger.info("Initialize");
-            Path p = Paths.get(System.getProperty("org.wildfly.ai.chatbot.mcp.config", "./mcp.json"));
+            Path p = ChatBotConfig.getMCPConfigPath();
             MCPConfig mcpConfig = MCPConfig.parseConfig(p);
             clients = new ArrayList<>();
             if (mcpConfig.mcpServers != null) {
@@ -110,9 +107,7 @@ public class ChatBotWebSocketEndpoint {
                     .mcpClients(clients)
                     .build();
             promptHandler = new PromptHandler(transports);
-            //Instance<ChatLanguageModel> model = CDI.current().select(ChatLanguageModel.class, NamedLiteral.of(System.getProperty("org.wildfly.ai.chatbot.llm.name", "ollama")));
-            //ChatLanguageModel model = instance.select(NamedLiteral.of("openai")).get();
-            String activellm = System.getProperty("org.wildfly.ai.chatbot.llm.name", "ollama");
+            String activellm = ChatBotConfig.getActiveLLMModel();
             ChatLanguageModel model = null;
             if (activellm != null) {
                 if (activellm.equals("ollama")) {
@@ -143,7 +138,6 @@ public class ChatBotWebSocketEndpoint {
         }
     }
 
-    // store the session once that it's opened
     @OnOpen
     public void onOpen(Session session) throws IOException {
         this.session = session;

@@ -3,7 +3,4 @@
 
 /subsystem=ai/ollama-chat-model=ollama:write-attribute(name=model-name,value=${org.wildfly.ai.ollama.chat.model.name,env.OLLAMA_CHAT_MODEL_NAME:qwen2.5:3b})
 
-/socket-binding-group=standard-sockets/socket-binding=http:write-attribute(name=port,value=${jboss.http.port:8090})
-/socket-binding-group=standard-sockets/socket-binding=management-http:write-attribute(name=port,value=${jboss.http.port:10000})
-
 /subsystem=undertow/server=default-server/http-listener=default:write-attribute(name=read-timeout, value=0)
