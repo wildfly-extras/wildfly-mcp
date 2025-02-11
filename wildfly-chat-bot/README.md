@@ -34,7 +34,7 @@ GROQ_CHAT_MODEL_NAME=llama3-70b-8192 GROQ_API_KEY=<Your groq key> java -jar targ
 | Env Variable    | Description |
 | -------- | ------- |
 | WILDFLY_CHAT_BOT_MCP_FILE  | Absolute path to the mcp.json file    |
-| WILDFLY_CHAT_BOT_LLM_MODEL  | The acyive model (`ollama` or `groq`)    |
+| WILDFLY_CHAT_BOT_LLM_MODEL  | The active LLM model (`ollama` or `groq`)    |
 | WILDFLY_MCP_SERVER_USER_NAME  | The default user name to use when connecting to WildFly server |
 | WILDFLY_MCP_SERVER_USER_PASSWORD  | The default user password to use when connecting to WildFly server |
 

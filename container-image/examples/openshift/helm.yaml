@@ -7,4 +7,8 @@ deploy:
   env:
     - name: OLLAMA_CHAT_URL
       value: "http://ollama:11434"
+    - name: WILDFLY_MCP_SERVER_USER_NAME
+      value: "admin"
+    - name: WILDFLY_MCP_SERVER_USER_PASSWORD
+      value: "admin"
     
