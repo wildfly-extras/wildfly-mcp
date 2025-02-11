@@ -4,8 +4,11 @@
  */
 package org.wildfly.ai.chatbot;
 
+import org.wildfly.ai.chatbot.prompt.PromptHandler;
+import org.wildfly.ai.chatbot.prompt.SelectedPrompt;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import dev.langchain4j.agent.tool.ToolSpecification;
@@ -158,12 +161,6 @@ public class ChatBotWebSocketEndpoint {
         return ow.writeValueAsString(msg);
     }
 
-    Map<String, String> toMap(String msg) throws Exception {
-        ObjectMapper om = new ObjectMapper();
-        return om.readValue(msg, new TypeReference<>() {
-        });
-    }
-
     void traceToolCalled(String tool, String args, String reply) {
         try {
             logger.info("Tool called: " + tool + args + " reply :" + reply);
@@ -196,7 +193,6 @@ public class ChatBotWebSocketEndpoint {
         return false;
     }
 
-    // remove the session after it's closed
     @OnClose
     public void onClose(Session session) throws Exception {
         logger.info("Websoket session closed: " + session.getId());
@@ -206,13 +202,13 @@ public class ChatBotWebSocketEndpoint {
         session.getBasicRemote().sendText("The session has been closed...");
     }
 
-    // This method receives a Message that contains a command
-    // The Message object is "decoded" by the MessageDecoder class
     @OnMessage
     public void onMessage(String question, Session session) throws IOException {
         try {
-            Map<String, String> msg = toMap(question);
-            String kind = msg.get("kind");
+            logger.info("NEW MESSAGE " + question);
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode msgObj = objectMapper.readTree(question);
+            String kind = msgObj.get("kind").asText();
             if ("list_tools".equals(kind)) {
                 StringBuilder tools = new StringBuilder("Available tools (Thoses tools are callable by your LLM when it is computing replies):\n");
                 for (McpClient client : clients) {
@@ -227,12 +223,35 @@ public class ChatBotWebSocketEndpoint {
                 session.getBasicRemote().sendText(toJson(map));
                 return;
             }
+            if ("list_prompts".equals(kind)) {
+                promptHandler.getPrompts();
+                Map<String, Object> map = new HashMap<>();
+                map.put("kind", "prompts");
+                map.put("value", promptHandler.getPrompts());
+                logger.info("Prompts sent to UI " + toJson(map));
+                session.getBasicRemote().sendText(toJson(map));
+                return;
+            }
+            if ("use_prompt".equals(kind)) {
+                JsonNode promptNode = msgObj.get("value");
+                SelectedPrompt prompt = objectMapper.treeToValue(promptNode, SelectedPrompt.class);
+                logger.info("Prompt received from UI " + promptNode.toPrettyString());
+                // Retrieve the prompt
+                String userPrompt = promptHandler.getPrompt(prompt);
+                // Ask The UI to emulate a user question (loading, ...)
+                Map<String, String> map = new HashMap<>();
+                map.put("kind", "emulate_user_question");
+                map.put("value", userPrompt);
+                session.getBasicRemote().sendText(toJson(map));
+                
+                return;
+            }
             if ("user_question".equals(kind)) {
                 executor.submit(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            String reply = bot.chat(msg.get("value"));
+                            String reply = bot.chat(msgObj.get("value").asText());
                             if (reply == null || reply.isEmpty()) {
                                 reply = "I have not been able to answer your question.";
                             }
@@ -258,7 +277,7 @@ public class ChatBotWebSocketEndpoint {
                 return;
             }
             if ("tool_acceptance_reply".equals(kind)) {
-                String reply = msg.get("value");
+                String reply = msgObj.get("value").asText();
                 logger.info("Received tool acceptance message: " + reply);
                 workQueue.offer(reply);
                 return;

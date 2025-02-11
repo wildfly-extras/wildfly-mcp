@@ -4,6 +4,11 @@
             "command": "java",
             "args": [ "-jar",
                     "/opt/server/wildfly-mcp-server-runner.jar"]
+    },
+    "wait": {
+            "command": "java",
+            "args": [ "-jar",
+                    "/opt/server/wait-mcp-server-runner.jar"]
     }
   }
 }
