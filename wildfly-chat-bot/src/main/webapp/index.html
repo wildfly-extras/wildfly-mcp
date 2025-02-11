@@ -18,6 +18,7 @@
                 objDiv.scrollTop = objDiv.scrollHeight;
             }
             function createChatBot() {
+                displayWaitingPopup();
                 const protocol = (window.location.protocol === 'https:') ? 'wss' : 'ws';
                 const socket = new WebSocket(protocol + '://' + window.location.host + '/chatbot');
 
@@ -91,6 +92,7 @@
                 objDiv.append(chatContainer);
 
                 socket.onmessage = function (event) {
+                    hideWaitingPopup();
                     const msg = JSON.parse(event.data);
                     const objDiv = document.getElementById("chat-body");
                     if (msg.kind !== "tool_calling") {
@@ -124,6 +126,27 @@
                     scrollIt();
                 }
             }
+
+            function displayWaitingPopup() {
+                var modal = document.getElementById("myModal");
+                modal.style.display = "block";
+                var okBtn = document.getElementById("okBtn");
+                okBtn.hidden = true;
+                var noBtn = document.getElementById("noBtn");
+                noBtn.hidden = true;
+                var content = document.getElementById("popupContent");
+                content.innerHTML = marked.parse("Waiting to connect to the WildFly Chat Bot...\n");
+            }
+
+            function hideWaitingPopup() {
+                var modal = document.getElementById("myModal");
+                modal.style.display = "none";
+                var okBtn = document.getElementById("okBtn");
+                okBtn.hidden = false;
+                var noBtn = document.getElementById("noBtn");
+                noBtn.hidden = false;
+            }
+
             function displayCallToolPopup(socket, tool, args) {
                 var modal = document.getElementById("myModal");
                 modal.style.display = "block";
