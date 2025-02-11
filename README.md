@@ -1,5 +1,7 @@
 # WildFly MCP
 
+[![smithery badge](https://smithery.ai/badge/@wildfly-extras/wildfly-mcp)](https://smithery.ai/server/@wildfly-extras/wildfly-mcp)
+
 This project aims to define tooling allowing WildFly users to benefenit from the Generative AI capabilities when monitoring and managing WildFly servers.
 
 * [WildFly MCP Server](wildfly-mcp-server/README.md): A WildFly [MCP server](https://github.com/modelcontextprotocol/servers) to integrate with your AI chatbot in order to interact with WildFly server using natural language.
@@ -9,3 +11,4 @@ This project aims to define tooling allowing WildFly users to benefenit from the
 * [Container Image](container-image/README.md): A container image that contains both the chat bot and the mcp server. Ready to interact with your WildFly servers on the cloud. Example of OpenShift deployment is provided.
 
 * [MCP STDIO to SEE protocol gateway](mcp-stdio-sse-gateway/README.md): A Java gateway allowing to integrate SSE MCP servers in chat applications that only support STDIO protocol.
+
