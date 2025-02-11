@@ -2,6 +2,10 @@
 
 You must be already logged into your OpenShift cluster.
 
+* Create the secrets that contain WildFly admin user:
+
+`oc create -f secrets.yaml`
+
 * Deploy your WildFly [helloworld quickstart](https://github.com/wildfly/quickstart/tree/main/helloworld) application:
 
 `helm install wildfly-app -f helm-wildfly.yaml wildfly/wildfly`

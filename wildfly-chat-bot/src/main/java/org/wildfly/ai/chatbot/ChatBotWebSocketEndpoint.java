@@ -40,6 +40,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerSSEConfig;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerStdioConfig;
 
@@ -57,6 +58,12 @@ public class ChatBotWebSocketEndpoint {
     @Inject
     @Named(value = "groq")
     ChatLanguageModel groq;
+    @Inject
+    @ConfigProperty(name="wildfly.chatbot.mcp.config.file")
+    private Path mcpConfigFile;
+    @Inject
+    @ConfigProperty(name="wildfly.chatbot.llm.name")
+    private String llmName;
     //@Inject Instance<ChatLanguageModel> instance;
     private PromptHandler promptHandler;
     private Bot bot;
@@ -70,8 +77,7 @@ public class ChatBotWebSocketEndpoint {
     public void init() {
         try {
             logger.info("Initialize");
-            Path p = ChatBotConfig.getMCPConfigPath();
-            MCPConfig mcpConfig = MCPConfig.parseConfig(p);
+            MCPConfig mcpConfig = MCPConfig.parseConfig(mcpConfigFile);
             clients = new ArrayList<>();
             if (mcpConfig.mcpServers != null) {
                 for (Map.Entry<String, MCPServerStdioConfig> entry : mcpConfig.mcpServers.entrySet()) {
@@ -107,19 +113,18 @@ public class ChatBotWebSocketEndpoint {
                     .mcpClients(clients)
                     .build();
             promptHandler = new PromptHandler(transports);
-            String activellm = ChatBotConfig.getActiveLLMModel();
             ChatLanguageModel model = null;
-            if (activellm != null) {
-                if (activellm.equals("ollama")) {
+            if (llmName != null) {
+                if (llmName.equals("ollama")) {
                     model = ollama;
                 } else {
-                    if (activellm.equals("openai")) {
+                    if (llmName.equals("openai")) {
                         model = openai;
                     } else {
-                        if (activellm.equals("groq")) {
+                        if (llmName.equals("groq")) {
                             model = groq;
                         } else {
-                            throw new RuntimeException("Unknown llm model " + activellm);
+                            throw new RuntimeException("Unknown llm model name " + llmName);
                         }
                     }
                 }

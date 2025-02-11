@@ -18,7 +18,7 @@ To quit the Ollama prompt, type **/bye**.
 podman run -e OLLAMA_CHAT_URL=http://localhost:11434 \
 --network=host -e PORT_OFFSET=10 \
 -e WILDFLY_MCP_SERVER_USER_NAME=<your admin user> -e WILDFLY_MCP_SERVER_USER_PASSWORD=<your admin password> \
-quay.io/jdenise/wildfly-chat-bot:latest
+quay.io/wildfly-snapshots/wildfly-chat-bot:latest
 ```
 
 The WildFly chat bot is then running on : `http://localhost:8090`

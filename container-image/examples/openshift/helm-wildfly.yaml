@@ -4,8 +4,6 @@ build:
   contextDir: helloworld
 deploy:
   replicas: 1
-  env:
-    - name: ADMIN_USERNAME
-      value: "admin"
-    - name: ADMIN_PASSWORD
-      value: "admin"
+  envFrom:
+    - secretRef:
+        name: wildfly-admin-secret
