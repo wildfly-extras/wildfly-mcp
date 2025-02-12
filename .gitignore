@@ -25,3 +25,4 @@ replay_pid*
 wildfly-mcp-server/target/
 wildfly-chat-bot/target/
 /mcp-stdio-sse-gateway/target/
+/wait-mcp-server/target/

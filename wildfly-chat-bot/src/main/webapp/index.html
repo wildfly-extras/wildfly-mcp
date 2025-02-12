@@ -81,10 +81,19 @@
                 // Prompts is not ready yet
                 const button3 = document.createElement('button')
                 button3.innerHTML = 'prompts';
-
+                button3.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const objDiv = document.getElementById("chat-body");
+                    const cb = objDiv.querySelectorAll('chat-bubble[loading]')
+                    if (cb.length == 0) {
+                        if (event.target !== null) {
+                            socket.send(JSON.stringify({kind: "list_prompts"}));
+                        }
+                    }
+                });
                 const inputDiv2 = document.createElement('div')
                 inputDiv2.classList.add('chatbot-toolbox');
-                inputDiv2.append(button2)
+                inputDiv2.append(button2, button3)
                 chatFooter.appendChild(form);
 
                 chatContainer.append(chatBody, chatFooter, inputDiv2);
@@ -112,6 +121,17 @@
                             if (msg.kind === "tool_calling") {
                                 displayCallToolPopup(socket, msg.tool, msg.args);
                                 return;
+                            } else {
+                                if (msg.kind === "prompts") {
+                                    displayPromptsPopup(socket, msg.value);
+                                    return;
+                                } else {
+                                    if (msg.kind === "emulate_user_question") {
+                                        userContent(msg.value);
+                                        socket.send(JSON.stringify({kind: "user_question", value: msg.value}));
+                                        return;
+                                    }
+                                }
                             }
                         }
                     }
@@ -127,6 +147,79 @@
                 }
             }
 
+            function displayPromptsPopup(socket, prompts) {
+                var modal = document.getElementById("promptsModal");
+                modal.style.display = "block";
+
+                const promptCancel = document.getElementById("promptCancel");
+                promptCancel.onclick = function () {
+                    modal.style.display = "none";
+                };
+                const promptUse = document.getElementById("promptUse");
+                promptUse.disabled = true;
+                promptUse.onclick = function () {
+                    modal.style.display = "none";
+                    displayCallingPrompt();
+                    var selectedEl = document.querySelector(".prompt-selected");
+                    const jsonPromptName = selectedEl.getAttribute("jsonPrompt");
+                    const argInputs = selectedEl.querySelectorAll("prompt-arg-input");
+                    var array = [];
+                    for (const arg of argInputs) {
+                         if ( arg.value !== "") {
+                            var argObj = {name: arg.id, value: arg.value};
+                            array.push(argObj);
+                        }
+                    }
+                    socket.send(JSON.stringify({kind: "use_prompt", value: {name:jsonPromptName, arguments: array}}));
+                };
+
+                const promptsDiv = document.getElementById("prompts-body");
+                promptsDiv.innerHTML = '';
+                for (const prompt of prompts) {
+                    let promptElement = document.createElement('div');
+                    promptsDiv.appendChild(promptElement);
+                    // Attach the JSON prompt to the prompt element
+                    promptElement.setAttribute("jsonPrompt", prompt.name);
+                    promptElement.classList.add("prompt");
+                    promptElement.addEventListener("click", function () {
+                        var selectedEl = document.querySelector(".prompt-selected");
+                        if (selectedEl) {
+                            selectedEl.classList.remove("prompt-selected");
+                        }
+                        this.classList.add("prompt-selected");
+                        promptUse.disabled = false;
+                    }, false);
+
+                    let desc = document.createElement('p');
+                    desc.textContent = prompt.description;
+                    promptElement.appendChild(desc);
+                    if (prompt.hasOwnProperty("arguments")) {
+                        for (const arg of prompt.arguments) {
+                            let promptArgElement = document.createElement('div');
+                            // Attach the JSON prompt to the prompt element
+                            promptArgElement.setAttribute("jsonPromptArg", arg.name);
+                            promptArgElement.classList.add("prompt-arg");
+                            let promptArgLabel = document.createElement('label');
+                            promptArgLabel.setAttribute("for", arg.name);
+                            promptArgLabel.setAttribute("title", arg.description);
+                            promptArgLabel.textContent = arg.name + ":";
+                            promptArgElement.appendChild(promptArgLabel);
+                            let promptArgInput = document.createElement('input');
+                            promptArgInput.classList.add("prompt-arg-input");
+                            promptArgInput.id = arg.name;
+                            let argInputPlaceHolder = "Optional argument";
+                            if (arg.required === "true") {
+                                argInputPlaceHolder = "Required argument";
+                            }
+                            promptArgInput.setAttribute("placeholder", argInputPlaceHolder);
+                            promptArgElement.appendChild(promptArgInput);
+                            promptElement.appendChild(promptArgElement);
+                        }
+                    }
+                }
+                
+            }
+
             function displayWaitingPopup() {
                 var modal = document.getElementById("myModal");
                 modal.style.display = "block";
@@ -136,6 +229,16 @@
                 noBtn.hidden = true;
                 var content = document.getElementById("popupContent");
                 content.innerHTML = marked.parse("Waiting to connect to the WildFly Chat Bot...\n");
+            }
+            function displayCallingPrompt() {
+                var modal = document.getElementById("myModal");
+                modal.style.display = "block";
+                var okBtn = document.getElementById("okBtn");
+                okBtn.hidden = true;
+                var noBtn = document.getElementById("noBtn");
+                noBtn.hidden = true;
+                var content = document.getElementById("popupContent");
+                content.innerHTML = marked.parse("Retrieving selected prompt...\n");
             }
 
             function hideWaitingPopup() {
@@ -219,11 +322,11 @@
                 padding: 10px;
                 display: flex;
             }
-            .chatbot-toolbox {
+            .chatbot-toolbox, .prompt-footer {
                 display: flex;
             }
 
-            .chatbot-input input {
+            .chatbot-input input, .prompt-arg input {
                 flex: 1;
                 border: none;
                 padding: 5px;
@@ -233,7 +336,7 @@
                 font-size: 24px;
             }
 
-            .chatbot-toolbox button, .chatbot-input button, .modal-content button {
+            .chatbot-toolbox button, .chatbot-input button, .modal-content button, .prompts-footer button {
                 border: none;
                 /* background-color: #4CAF50; */
                 //background-color: var(--chatbot-send-button-color);
@@ -324,7 +427,54 @@
               margin: auto;
               padding: 10px;
               border: 1px solid #888;
-              width: 40%;
+              width: 60%;
+            }
+
+            .modal-prompts-content {
+                box-shadow:10px 5px 5px;
+                border-radius: 3px;
+                font-size: 24px;
+                background-color: #d4ccc9;
+                margin: auto;
+                padding: 10px;
+                border: 1px solid #888;
+                width: 60%;
+                display: flex;
+                flex-direction: column;
+            }
+            .prompts-body {
+                height: 300px;
+                overflow-y: auto;
+                padding: 8px;
+                flex-grow: 1;
+                flex-shrink: 1;
+                display: flex;
+                flex-direction: column;
+                //background-color: #9dbfde;
+            }
+            .prompt {
+                width: 98%;
+                height:auto;
+                padding: 8px;
+                border: 1px solid #888;
+            }
+            .prompt-arg {
+                display: flex;
+            }
+            .prompt-arg label {
+                padding-right: 10px;
+            }
+            .prompt:hover,
+            .prompt:active {
+                background-color: #226fa3;
+                transition: background-color 0.4s ease-in, border-color 0.4s ease-in;
+                color: #ffffff;
+            }
+
+            .prompt-selected {
+                background-color: #226fa3;
+                transition: background-color 0.4s ease-in, border-color 0.4s ease-in;
+                color: #ffffff;
             }
         </style>
     </head>
@@ -338,6 +488,18 @@
                     <button id="okBtn">Ok</button>
                     <button id="noBtn">No</button>
                 </div>
+            </div>
+            <div id="promptsModal" class="modal">
+                <!-- Modal content -->
+                <div class="modal-prompts-content">
+                    <div><p>Available Prompts:</p></div>
+                    <div id="prompts-body" class="prompts-body"></div>
+                    <div id="prompts-footer" class="prompts-footer">
+                    <button id="promptUse">Use</button>
+                    <button id="promptCancel">Cancel</button>
+                </div>
+                </div>
+                
             </div>
         </div>
     </body>

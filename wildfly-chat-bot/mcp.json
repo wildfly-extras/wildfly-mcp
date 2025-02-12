@@ -4,7 +4,15 @@
             "command": "java",
             "args": [
                      "-jar",
-                    "../wildfly-mcp-server/target/wildfly-mcp-server-runner.jar"]
+                     "-Dorg.wildfly.user.name=admin",
+                     "-Dorg.wildfly.user.password=admin",
+                     "../wildfly-mcp-server/target/wildfly-mcp-server-runner.jar"]
+    },
+    "wait": {
+            "command": "java",
+            "args": [
+                     "-jar",
+                     "../wait-mcp-server/target/wait-mcp-server-runner.jar"]
     }
   }
 }

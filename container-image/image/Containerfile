@@ -4,6 +4,7 @@ FROM ${runtime_image}
 COPY --chown=jboss:root server $JBOSS_HOME
 RUN chmod -R ug+rwX $JBOSS_HOME
 COPY --chown=jboss:root wildfly-mcp-server-runner.jar $JBOSS_HOME
+COPY --chown=jboss:root wait-mcp-server-runner.jar $JBOSS_HOME
 COPY --chown=jboss:root mcp.json $JBOSS_HOME
 
 ENV WILDFLY_CHATBOT_MCP_CONFIG_FILE="$JBOSS_HOME/mcp.json"
