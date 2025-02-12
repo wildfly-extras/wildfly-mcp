@@ -1,5 +1,6 @@
 # WildFly MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@wildfly-extras/wildfly-mcp-server)](https://smithery.ai/server/@wildfly-extras/wildfly-mcp-server)
 A WildFly [MCP server](https://github.com/modelcontextprotocol/servers) to integrate with your AI chatbot in order to interact with WildFly server using natural language.
 This MCP server is a Java quarkus fat jar application that you can configure in your chatbot mcp configuration.
 
@@ -11,6 +12,14 @@ You can ask questions such as:
 ## Download the latest WildFly MCP binary
 
 You can download it from: `https://github.com/jfdenise/wildfly-mcp-server/releases/download/1.0.0.Alpha1/wildfly-mcp-server-1.0.0.Alpha1-runner.jar`
+
+### Installing via Smithery
+
+To install WildFly MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@wildfly-extras/wildfly-mcp-server):
+
+```bash
+npx -y @smithery/cli install @wildfly-extras/wildfly-mcp-server --client claude
+```
 
 ## Build WildFly MCP fat jar
 
