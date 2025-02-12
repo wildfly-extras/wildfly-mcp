@@ -1,7 +1,5 @@
 # Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
 
-build:
-  dockerBuildPath: ./wildfly-mcp-server
 startCommand:
   type: stdio
   configSchema:
