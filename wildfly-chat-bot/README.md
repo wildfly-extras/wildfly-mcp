@@ -8,13 +8,15 @@ By default the file `./mcp.json` is read. You can configure it with `-Dwildfly.c
 
 1) Build the WildFly MCP server located in `../wildfly-mcp-server` (The chat bot will use it in its [default mcp.json](mcp.json) configuration).
 
-2) Build the WildFly chat bot:
+2) Build the WildFly wait server located in `../wait-mcp-server` (The chat bot will use it in its [default mcp.json](mcp.json) configuration).
+
+3) Build the WildFly chat bot:
 
 ```
 mvn clean install
 ```
 
-3) Start the chat bot using local `ollama` (by default uses the `qwen2.5:3b`) model, once started it listens on port `8090`:
+4) Start the chat bot using local `ollama` (by default uses the `qwen2.5:3b`) model, once started it listens on port `8090`:
 
 ```
 java -jar target/wildfly-chat-bot-bootable.jar
@@ -23,7 +25,7 @@ java -jar target/wildfly-chat-bot-bootable.jar
 
 This chatbot has also been tried with the `llama3.2:3b` and provided good results.
 
-3) Start the chat bot using [groq](https://console.groq.com/docs/openai), once started it listens on port `8090`:
+4) Start the chat bot using [groq](https://console.groq.com/docs/openai), once started it listens on port `8090`:
 
 ```
 GROQ_CHAT_MODEL_NAME=llama3-70b-8192 GROQ_API_KEY=<Your groq key> java -jar target/wildfly-chat-bot-bootable.jar -Dwildfly.chatbot.llm.name=groq
