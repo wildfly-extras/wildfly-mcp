@@ -3,18 +3,8 @@
 startCommand:
   type: stdio
   configSchema:
-    # JSON Schema defining the configuration options for the MCP.
-    type: object
-    properties:
-      hostName:
-        type: string
-        default: localhost
-        description: The host name for the WildFly server.
-      port:
-        type: number
-        default: 9990
-        description: The port number for the WildFly server.
+    {}
   commandFunction:
     # A function that produces the CLI command to start the MCP on stdio.
     |-
-    (config) => ({command: 'java', args: ['-Dorg.wildfly.host.name=' + (config.hostName || 'localhost'), '-Dorg.wildfly.port=' + (config.port || 9990), '-jar', 'wildfly-mcp-server.jar']})
+    (config) => ({command: 'java', args: ['-jar', 'wildfly-mcp-server.jar']})
