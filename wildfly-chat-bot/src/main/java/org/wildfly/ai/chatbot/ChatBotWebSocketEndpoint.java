@@ -4,14 +4,15 @@
  */
 package org.wildfly.ai.chatbot;
 
+import org.wildfly.ai.chatbot.tool.ToolHandler;
+import org.wildfly.ai.chatbot.tool.SelectedTool;
+import org.wildfly.ai.chatbot.tool.ToolDescription;
 import org.wildfly.ai.chatbot.prompt.PromptHandler;
 import org.wildfly.ai.chatbot.prompt.SelectedPrompt;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
@@ -67,8 +68,9 @@ public class ChatBotWebSocketEndpoint {
     @Inject
     @ConfigProperty(name="wildfly.chatbot.llm.name")
     private String llmName;
-    //@Inject Instance<ChatLanguageModel> instance;
+    private boolean disabledAcceptance;
     private PromptHandler promptHandler;
+    private ToolHandler toolHandler;
     private Bot bot;
     private List<McpClient> clients = new ArrayList<>();
     private final List<McpTransport> transports = new ArrayList<>();
@@ -116,6 +118,7 @@ public class ChatBotWebSocketEndpoint {
                     .mcpClients(clients)
                     .build();
             promptHandler = new PromptHandler(transports);
+            toolHandler = new ToolHandler(clients);
             ChatLanguageModel model = null;
             if (llmName != null) {
                 if (llmName.equals("ollama")) {
@@ -178,6 +181,9 @@ public class ChatBotWebSocketEndpoint {
 
     boolean canCallTool(String tool, String args) {
         try {
+            if(disabledAcceptance) {
+                return true;
+            }
             logger.info("Can call: " + tool + args);
             Map<String, String> map = new HashMap<>();
             map.put("kind", "tool_calling");
@@ -210,16 +216,11 @@ public class ChatBotWebSocketEndpoint {
             JsonNode msgObj = objectMapper.readTree(question);
             String kind = msgObj.get("kind").asText();
             if ("list_tools".equals(kind)) {
-                StringBuilder tools = new StringBuilder("Available tools (Thoses tools are callable by your LLM when it is computing replies):\n");
-                for (McpClient client : clients) {
-                    List<ToolSpecification> specs = client.listTools();
-                    for (ToolSpecification s : specs) {
-                        tools.append("* **" + s.name() + "**: " + s.description() + "\n");
-                    }
-                }
-                Map<String, String> map = new HashMap<>();
-                map.put("kind", "simple_text");
-                map.put("value", tools.toString());
+                List<ToolDescription> tools = toolHandler.getTools();
+                Map<String, Object> map = new HashMap<>();
+                map.put("kind", "tools");
+                map.put("value", tools);
+                logger.info("Tools sent to UI " + toJson(map));
                 session.getBasicRemote().sendText(toJson(map));
                 return;
             }
@@ -245,6 +246,21 @@ public class ChatBotWebSocketEndpoint {
                 session.getBasicRemote().sendText(toJson(map));
                 
                 return;
+            }
+            if ("call_tool".equals(kind)) {
+                JsonNode toolNode = msgObj.get("value");
+                SelectedTool tool = objectMapper.treeToValue(toolNode, SelectedTool.class);
+                try {
+                    disabledAcceptance = true;
+                    String reply = toolHandler.executeTool(tool);
+                    Map<String, String> map = new HashMap<>();
+                    map.put("kind", "simple_text");
+                    map.put("value", reply);
+                    session.getBasicRemote().sendText(toJson(map));
+                    return;
+                } finally {
+                    disabledAcceptance = false;
+                }
             }
             if ("user_question".equals(kind)) {
                 executor.submit(new Runnable() {

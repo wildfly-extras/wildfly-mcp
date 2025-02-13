@@ -4,9 +4,7 @@
  */
 package org.wildfly.ai.chatbot.prompt;
 
-import org.wildfly.ai.chatbot.prompt.SelectedPrompt;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import java.util.ArrayList;
