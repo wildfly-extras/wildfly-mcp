@@ -9,3 +9,5 @@ This project aims to define tooling allowing WildFly users to benefenit from the
 * [Container Image](container-image/README.md): A container image that contains both the chat bot and the mcp server. Ready to interact with your WildFly servers on the cloud. Example of OpenShift deployment is provided.
 
 * [MCP STDIO to SEE protocol gateway](mcp-stdio-sse-gateway/README.md): A Java gateway allowing to integrate SSE MCP servers in chat applications that only support STDIO protocol.
+
+* [Wait MCP Server](wait-mcp-server/README.md): A simple [MCP server](https://github.com/modelcontextprotocol/servers) that allows LLM to wait for some seconds. Can be useful in some workflow.

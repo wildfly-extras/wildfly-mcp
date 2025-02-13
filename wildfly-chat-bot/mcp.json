@@ -4,8 +4,8 @@
             "command": "java",
             "args": [
                      "-jar",
-                     "-Dorg.wildfly.user.name=admin",
-                     "-Dorg.wildfly.user.password=admin",
+                     "-Dorg.wildfly.user.name=chatbot-user",
+                     "-Dorg.wildfly.user.password=chatbot-user",
                      "../wildfly-mcp-server/target/wildfly-mcp-server-runner.jar"]
     },
     "wait": {
