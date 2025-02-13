@@ -26,6 +26,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
@@ -35,6 +36,7 @@ import org.apache.http.conn.HttpHostConnectException;
 import org.jboss.as.cli.CommandContext;
 import org.jboss.as.cli.CommandContextFactory;
 import org.jboss.dmr.ModelNode;
+import org.jboss.dmr.ModelType;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.wildfly.mcp.WildFlyManagementClient.AddLoggerRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggersRequest;
@@ -87,8 +89,8 @@ public class WildFlyMCPServer {
         }
     }
     
-    @Tool(description = "Gets the server configuration xml file content of the WildFly server running on the provided host and port arguments.")
-    ToolResponse getWildFlyServerConfigurationFile(
+    @Tool(description = "Gets the server configuration in JSON format of the WildFly server running on the provided host and port arguments.")
+    ToolResponse getWildFlyServerConfiguration(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
             @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
@@ -96,13 +98,41 @@ public class WildFlyMCPServer {
         Server server = new Server(host, port);
         try {
             User user = new User(userName, userPassword);
-            ReadConfigAsXmlResponse response = wildflyClient.call(new ReadConfigAsXmlRequest(server, user));
-            return buildResponse(response.result);
+            CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
+            // This call, if done with the Monitor role, will be filtered. No sensitive information present.
+            ModelNode mn = ctx.buildRequest(":read-resource(recursive=true)");
+            String value = wildflyClient.call(server, user, mn.toJSONString(false), false);
+            ModelNode node = ModelNode.fromJSONString(value);
+            ModelNode result = node.get("result");
+            // enforce some cleanup
+            result.remove("extension");
+            result.remove("core-service");
+            result.remove("path");
+            result.remove("system-properties");
+            result.get("subsystem").remove("elytron");
+            cleanupUndefined(result);
+            return buildResponse(result.toJSONString(false));
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the logging categories");
         }
     }
-    
+    private static void cleanupUndefined(ModelNode mn) {
+        Set<String> toRemove = new HashSet<>();
+        for(String key : mn.keys()) {
+            ModelNode field = mn.get(key);
+            if (!field.isDefined()) {
+                toRemove.add(key);
+            } else {
+                if(field.getType() == ModelType.OBJECT) {
+                    cleanupUndefined(field);
+                }
+            }
+        }
+        for(String k : toRemove) {
+            mn.remove(k);
+        }
+    }
+
     @Tool(description = "Invoke a single WildFly CLI operation on the WildFly server running on the provided host and port arguments.")
     ToolResponse invokeWildFlyCLIOperation(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,

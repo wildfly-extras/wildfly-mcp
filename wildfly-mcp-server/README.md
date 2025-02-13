@@ -63,7 +63,7 @@ If you are using [jbang](http://jbang.dev), you can add the following json conte
 
 ## Admin user credentials
 
-The tools allow you to provide user name and password directly in your question. 
+The tools allow you to provide user name and password required to interact with a WildFly server directly in your question. 
 You can set the user name and password in the tool shell command using the system properties `-Dorg.wildfly.user.name=<user name>` and `-Dorg.wildfly.user.password=<user password>`
 
 ```
@@ -71,14 +71,49 @@ You can set the user name and password in the tool shell command using the syste
   "mcpServers": {
     "wildfly": {
             "command": "java",
-            "args": ["-Dorg.wildfly.user.name=admin",
-                     "-Dorg.wildfly.user.password=admin",
+            "args": ["-Dorg.wildfly.user.name=chatbot-user",
+                     "-Dorg.wildfly.user.password=chatbot-user",
                      "-jar",
                      "[path to the repository]/wildfly-mcp-server/target/wildfly-mcp-server-1.0.0.Final-SNAPSHOT-runner.jar"]
     }
   }
 }
 ``` 
+
+### Note on security
+
+Allowing full access to your WildFly servers from the chatbot is not advised. Although you would then be able to call any WildFly management operations,
+it must be done carefully. In particular when the chat bot is connected to a public LLM, no sentive information should be exposed.
+
+When the chat bot interacts with a locally managed model (e.g.: locally managed `ollama` model, the default), this is less of a problem.
+ 
+In any case it is advised that you benefit from the [WildFly RBAC](https://docs.wildfly.org/35/Admin_Guide.html#RBAC) configuration and define a user named `chatbot-user` with role `Monitor`.
+
+Make sure to first add the user by invoking: `$JBOSS_HOME/bin/add-user.sh -p chatbot-user -u chatbot-user`
+
+To enable RBAC, you can use the WildFly CLI command line and invoke the following commands:
+
+```
+/core-service=management/access=authorization:write-attribute(name=provider,value=rbac)
+reload
+/core-service=management/access=authorization/role-mapping=Monitor:add
+/core-service=management/access=authorization/role-mapping=Monitor/include=chatbot-user:add(name=chatbot-user,type=USER)
+```
+
+When a user with the `Monitor` role is used, the following tools would fail:
+
+* `enableWildFlyLoggingCategory` tool.
+
+* `disableWildFlyLoggingCategory` tool.
+
+In addition, write operations are not allowed when invoking the `invokeWildFlyCLIOperation` tool.
+
+## Note on sensitive information
+
+* Any sensitive information located in your server configuration file are not exposed when 
+accessing to the server with the `chatbot-user` (actually any user with the `Monitor` role).
+
+* WildFly server doesn't log sensitive information. Make sure that the deployments running in the WildFly servers are not logging sensitive information that could be exposed.
 
 ## Default WildFly server host and port
 
@@ -165,8 +200,8 @@ Invoke a single WildFly CLI operation on the WildFly server running on the provi
 - `userName`: The admin user name. Optional.
 - `password`: The admin user password. Optional.
 
-### getWildFlyServerConfigurationFile
-Gets the server configuration xml file content of the WildFly server running on the provided host and port arguments.
+### getWildFlyServerConfiguration
+Gets the server configuration in JSON format of the WildFly server running on the provided host and port arguments.
 
 **Inputs**:
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
@@ -187,8 +222,8 @@ Make sure to first start you WildFly sever.
 
 ### Logging
 
-* Hi, could you connect to the WildFly server running on host localhost and port 9990 with the user name admin and password foo then enable the security logging?
-* Hi, could you connect to the WildFly server running on host localhost and port 9990 with the user name admin and password admin then enable the security logging?
+* Hi, could you connect to the WildFly server running on host localhost and port 9990 with the user name chatbot-user and password foo then enable the security logging?
+* Hi, could you connect to the WildFly server running on host localhost and port 9990 with the user name chatbot-user and password chatbot-user then enable the security logging?
 
 Then attempt to connect to the server with invalid credentials, that the chatbot will analyze in the next question.
 
