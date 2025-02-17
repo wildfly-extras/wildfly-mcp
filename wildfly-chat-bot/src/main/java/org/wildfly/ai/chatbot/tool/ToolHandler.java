@@ -8,7 +8,7 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
-import dev.langchain4j.model.chat.request.json.JsonStringSchema;
+import dev.langchain4j.model.chat.request.json.JsonSchemaElementHelper;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,10 +36,10 @@ public class ToolHandler {
                 for (Map.Entry<String, JsonSchemaElement> entry : s.parameters().properties().entrySet()) {
                     // Support only String tools...
                     String name = entry.getKey();
-                    JsonStringSchema schema = (JsonStringSchema) entry.getValue();
-                    String description = schema.description();
+                    JsonSchemaElement schema = entry.getValue();
+                    Map<String, Object> map = JsonSchemaElementHelper.toMap(schema);
                     ToolDescription.ToolArg arg = new ToolDescription.ToolArg();
-                    arg.description = description;
+                    arg.description = (String) map.get("description");
                     arg.name = name;
                     arg.required = required.contains(name) ? "true" : "false";
                     arguments.add(arg);
@@ -55,17 +55,17 @@ public class ToolHandler {
         McpClient client = toolToClient.get(tool.name);
         StringBuilder jsonArguments = new StringBuilder("{");
         Iterator<ToolArg> it = tool.arguments.iterator();
-        while(it.hasNext()) {
+        while (it.hasNext()) {
             ToolArg arg = it.next();
-            jsonArguments.append("\""+ arg.name + "\": " + "\""+arg.value+"\"");
-            if(it.hasNext()) {
+            jsonArguments.append("\"" + arg.name + "\": " + "\"" + arg.value + "\"");
+            if (it.hasNext()) {
                 jsonArguments.append(",");
             }
         }
         jsonArguments.append("}");
-        System.out.println("STIRNG JSON " + jsonArguments);
+        System.out.println("JSON String " + jsonArguments);
         ToolExecutionRequest req = ToolExecutionRequest.builder().arguments(jsonArguments.toString()).id("1").name(tool.name).build();
-                
+
         return client.executeTool(req);
     }
 }
