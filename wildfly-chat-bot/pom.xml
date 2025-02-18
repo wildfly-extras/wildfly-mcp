@@ -14,7 +14,7 @@
 
     <groupId>org.wildfly.ai</groupId>
     <artifactId>wildfly-chat-bot</artifactId>
-    <version>cc</version>
+    <version>1.0.0.Final-SNAPSHOT</version>
     <packaging>war</packaging>
     <name>WildFly Chat Bot</name>
     <properties>
