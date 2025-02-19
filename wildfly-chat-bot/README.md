@@ -4,7 +4,20 @@ A WildFly Chat Bot. This WildFly Bootable jar application is a web based UI allo
 
 ![](img/chatbot-demo.png)
 
-By default the file `./mcp.json` is read. You can configure it with `-Dwildfly.chatbot.mcp.config.file=<path to file>`
+## WildFly Chat Bot features
+
+* Interact in natural language with WildFly servers.
+* Pre-configured with the [WildFly MCP server](../wildfly-mcp-server/README.md).
+* STDIO and SSE mcp server can be added thanks to the [mcp.json](mcp.json) file.
+* Ability to select and call mcp tools (allow to debug mcp servers) .
+* Ability to select and use mcp prompts.
+* Acceptance workflow of LLM called tools. You can reject a tool invocation done by the LLM.
+
+## Using the WIldFly chatbot container image
+
+You can start the chatbot thanks to its container image. You can check [this documentation](../container-image/examples/podman/README.md) that uses `podman`.
+
+## Build the chatbot
 
 1) Build the WildFly MCP server located in `../wildfly-mcp-server` (The chat bot will use it in its [default mcp.json](mcp.json) configuration).
 
@@ -17,6 +30,10 @@ mvn clean install
 ```
 
 4) Start the chat bot using local `ollama` (by default uses the `qwen2.5:3b`) model, once started it listens on port `8090`:
+
+By default the file `./mcp.json` is read. You can configure it with `-Dwildfly.chatbot.mcp.config.file=<path to file>`
+
+NOTE: You must use JDK21+ to run the chatbot.
 
 ```
 java -jar target/wildfly-chat-bot-bootable.jar
