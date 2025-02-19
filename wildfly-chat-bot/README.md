@@ -72,7 +72,7 @@ GROQ_CHAT_MODEL_NAME=llama3-70b-8192 GROQ_API_KEY=<Your groq key> java -jar targ
 | Env Variable    | Description |
 | -------- | ------- |
 | GROQ_API_KEY   | Your API key |
-| GROQ_CHAT_URL  | URL, default value `http://127.0.0.1:11434`    |
-| GROQ_CHAT_MODEL_NAME | model, default value `qwen2.5:3b`   |
+| GROQ_CHAT_URL  | URL, default value `https://api.groq.com/openai/v1`    |
+| GROQ_CHAT_MODEL_NAME | model, default value `llama3-8b-8192`   |
 | GROQ_CHAT_LOG_REQUEST    | log requests, by default `true`    |
 | GROQ_CHAT_LOG_RESPONSE    | log responses, by default `true`    |
