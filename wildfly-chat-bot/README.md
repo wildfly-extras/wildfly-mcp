@@ -13,7 +13,7 @@ A WildFly Chat Bot. This WildFly Bootable jar application is a web based UI allo
 * Ability to select and use mcp prompts.
 * Acceptance workflow of LLM called tools. You can reject a tool invocation done by the LLM.
 
-## Using the WIldFly chatbot container image
+## Using the WildFly chatbot container image
 
 You can start the chatbot thanks to its container image. You can check [this documentation](../container-image/examples/podman/README.md) that uses `podman`.
 

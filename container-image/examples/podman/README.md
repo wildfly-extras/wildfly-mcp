@@ -9,8 +9,8 @@ podman run -d --rm --name ollama --replace --pull=always -p 11434:11434 -v ollam
 
 podman exec -it ollama ollama run qwen2.5:3b
 ```
+
 To quit the Ollama prompt, type **/bye**.
-```
 
 * Starts the image (replace the user name and password with yours):
 
