@@ -7,7 +7,9 @@ WORKDIR /app
 
 # Copy the pom.xml and source code
 COPY pom.xml ./
-COPY src ./src
+COPY common ./common
+COPY stdio ./stdio
+COPY sse ./sse
 
 # Package the application
 RUN mvn clean install
@@ -19,7 +21,7 @@ FROM mirror.gcr.io/openjdk:21-jdk-slim
 WORKDIR /app
 
 # Copy the built jar file from the builder stage
-COPY --from=builder /app/target/wildfly-mcp-server-runner.jar ./wildfly-mcp-server.jar
+COPY --from=builder /app/stdio/target/wildfly-mcp-server-stdio-runner.jar ./wildfly-mcp-server.jar
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "wildfly-mcp-server.jar"]

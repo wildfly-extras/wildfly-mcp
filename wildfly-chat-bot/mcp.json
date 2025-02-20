@@ -6,7 +6,7 @@
                      "-jar",
                      "-Dorg.wildfly.user.name=chatbot-user",
                      "-Dorg.wildfly.user.password=chatbot-user",
-                     "../wildfly-mcp-server/target/wildfly-mcp-server-runner.jar"]
+                     "../wildfly-mcp-server/stdio/target/wildfly-mcp-server-stdio-runner.jar"]
     },
     "wait": {
             "command": "java",
