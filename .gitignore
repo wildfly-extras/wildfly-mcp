@@ -26,3 +26,6 @@ wildfly-mcp-server/target/
 wildfly-chat-bot/target/
 /mcp-stdio-sse-gateway/target/
 /wait-mcp-server/target/
+/wildfly-mcp-server/sse/target/
+/wildfly-mcp-server/stdio/target/
+/wildfly-mcp-server/common/target/

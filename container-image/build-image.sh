@@ -10,7 +10,7 @@ cp -r target/server ../container-image/image
 
 cd ../wildfly-mcp-server
 mvn clean install
-cp target/wildfly-mcp-server-runner.jar ../container-image/image
+cp stdio/target/wildfly-mcp-server-stdio-runner.jar ../container-image/image
 
 cd ../wait-mcp-server
 mvn clean install

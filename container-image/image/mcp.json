@@ -3,7 +3,7 @@
     "wildfly": {
             "command": "java",
             "args": [ "-jar",
-                    "/opt/server/wildfly-mcp-server-runner.jar"]
+                    "/opt/server/wildfly-mcp-server-stdio-runner.jar"]
     },
     "wait": {
             "command": "java",

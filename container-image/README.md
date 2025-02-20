@@ -1,6 +1,6 @@
 # WildFly Chat Bot container image
 
-This image contains both the chat bot and the WildFly MCP server. Starts this image to interact with any WildFly server.
+This image contains both the chat bot and the WildFly MCP server (STDIO protocol). Starts this image to interact with any WildFly server.
 
 ## Build the image
 

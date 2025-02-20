@@ -21,11 +21,14 @@ To install WildFly MCP Server for Claude Desktop automatically via [Smithery](ht
 npx -y @smithery/cli install @wildfly-extras/wildfly-mcp-server --client claude
 ```
 
-## Build WildFly MCP fat jar
+## Build WildFly MCP quarkus uber jars
 
 Make sure to use JDK21+.
  
 `mvn clean install`
+
+The STDIO based mcp server jar is `stdio/target/wildfly-mcp-server-stdio-runner.jar`.
+The SSE based mcp server jar is `sse/target/wildfly-mcp-server-sse-runner.jar`.
 
 ## Configure the chatbot
 
@@ -37,7 +40,19 @@ Add the following json to the chatbot configuration file:
     "wildfly": {
             "command": "java",
             "args": ["-jar",
-                    "[path to the repository]/wildfly-mcp-server/target/wildfly-mcp-server-1.0.0.Final-SNAPSHOT-runner.jar"]
+                    "[path to the repository]/wildfly-mcp-server/stdio/target/wildfly-mcp-server-stdio-runner.jar"]
+    }
+  }
+}
+``` 
+
+If using SSE, add the following json to the chatbot configuration file:
+
+```
+{
+  "mcpSSEServers": {
+    "wildfly": {
+            "url": "http://localhost:8081/mcp/sse"
     }
   }
 }
@@ -51,7 +66,7 @@ If you are using [jbang](http://jbang.dev), you can add the following json conte
     "wildfly": {
             "command": "jbang",
             "args": ["--quiet",
-                    "org.wildfly:wildfly-mcp-server:1.0.0.Final-SNAPSHOT:runner"]
+                    "org.wildfly:wildfly-mcp-server-stdio:1.0.0.Final-SNAPSHOT:runner"]
     }
   }
 }

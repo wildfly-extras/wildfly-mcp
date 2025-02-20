@@ -3,7 +3,7 @@ ARG runtime_image=quay.io/wildfly/wildfly-runtime:latest
 FROM ${runtime_image}
 COPY --chown=jboss:root server $JBOSS_HOME
 RUN chmod -R ug+rwX $JBOSS_HOME
-COPY --chown=jboss:root wildfly-mcp-server-runner.jar $JBOSS_HOME
+COPY --chown=jboss:root wildfly-mcp-server-stdio-runner.jar $JBOSS_HOME
 COPY --chown=jboss:root wait-mcp-server-runner.jar $JBOSS_HOME
 COPY --chown=jboss:root mcp.json $JBOSS_HOME
 

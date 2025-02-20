@@ -35,6 +35,7 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -104,6 +105,7 @@ public class ChatBotWebSocketEndpoint {
             if (mcpConfig.mcpSSEServers != null) {
                 for (Map.Entry<String, MCPServerSSEConfig> entry : mcpConfig.mcpSSEServers.entrySet()) {
                     McpTransport transport = new HttpMcpTransport.Builder()
+                            .timeout(Duration.ZERO)
                             .sseUrl(entry.getValue().url)
                             .build();
                     transports.add(transport);
