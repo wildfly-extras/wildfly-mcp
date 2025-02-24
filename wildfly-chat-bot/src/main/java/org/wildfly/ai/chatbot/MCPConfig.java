@@ -17,10 +17,14 @@ public class MCPConfig {
         public String command;
         public List<String> args;
     }
-
+    
     public static class MCPServerSSEConfig {
 
         public String url;
+        public String providerUrl;
+        public String clientId;
+        public String secret;
+        
     }
 
     public Map<String, MCPServerStdioConfig> mcpServers;

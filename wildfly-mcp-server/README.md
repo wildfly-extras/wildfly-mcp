@@ -7,11 +7,7 @@ This MCP server is a Java quarkus fat jar application that you can configure in 
 This MCP server (a Tool in AI terminologie) helps you troubleshoot running WildFly servers using natural language.
 You can ask questions such as:
 
-`Hi, could you connect to the WildFly server running on host localhost and port 9990 with the user name admin and password admin and get the content of the log file, analyze it and check for errors?`
-
-## Download the latest WildFly MCP binary
-
-You can download it from: `https://github.com/jfdenise/wildfly-mcp-server/releases/download/1.0.0.Alpha1/wildfly-mcp-server-1.0.0.Alpha1-runner.jar`
+`Hi, could you connect to the WildFly server running on host localhost and port 9990 and get the content of the log file, analyze it and check for errors?`
 
 ### Installing via Smithery
 
@@ -44,19 +40,7 @@ Add the following json to the chatbot configuration file:
     }
   }
 }
-``` 
-
-If using SSE, add the following json to the chatbot configuration file:
-
 ```
-{
-  "mcpSSEServers": {
-    "wildfly": {
-            "url": "http://localhost:8081/mcp/sse"
-    }
-  }
-}
-``` 
 
 If you are using [jbang](http://jbang.dev), you can add the following json content:
 
@@ -76,10 +60,33 @@ If you are using [jbang](http://jbang.dev), you can add the following json conte
 
 * For [MCPHost](https://github.com/mark3labs/mcphost), add to a file named `mcp.json` and call: `./mcphost_Linux_x86_64/mcphost --config [path to the file]/mcp.json --model ollama:llama3.1:8b`
 
+## Configuring the WildFly MCP SSE server
+
+The access to the [WildFly MCP SSE server](sse) is secured with OIDC (OAuth2 'Resource Owner Password Credentials Grant').
+
+In the following configuration (from the [WildFly chat bot](../wildfly-chat-bot/README.md)), a keycloak realm named `wildfly-mcp-server` that contains a client named `token-service` is used to authenticate users.
+The WildFly chatbot will prompt you for username and password that will then be used to retrieve Tokens from the keycloak server allowing to access 
+to the SSE MCP server.
+
+```
+{
+  "mcpSSEServers": {
+    "wildfly": {
+            "url": "http://localhost:8081/mcp/sse"
+            "providerUrl": "http://localhost:8180/realms/wildfly-mcp-server",
+            "clientId": "token-service"
+    }
+  }
+}
+``` 
+
+WARNING: This configuration is subject to change once the 
+[Authorization specification draft](https://spec.modelcontextprotocol.io/specification/draft/basic/authorization/) 
+is integrated in the [MCP protocol specification](https://spec.modelcontextprotocol.io/specification/2024-11-05/).
+
 ## Admin user credentials
 
-The tools allow you to provide user name and password required to interact with a WildFly server directly in your question. 
-You can set the user name and password in the tool shell command using the system properties `-Dorg.wildfly.user.name=<user name>` and `-Dorg.wildfly.user.password=<user password>`
+You can set the user name and password that you have been using to secure the WildFly server in the tool shell command using the system properties `-Dorg.wildfly.user.name=<user name>` and `-Dorg.wildfly.user.password=<user password>`
 
 ```
 {
@@ -94,6 +101,8 @@ You can set the user name and password in the tool shell command using the syste
   }
 }
 ``` 
+
+NOTE: For SSE server, you can set the same system properties when starting the server.
 
 ### Note on security
 
@@ -135,6 +144,16 @@ accessing to the server with the `chatbot-user` (actually any user with the `Mon
 If no host is provided, `localhost` is used. If no port is provided, `9990` is used.
 You can configure default host and port using the system properties `-Dorg.wildfly.host.name=<host name>` and `-Dorg.wildfly.port=<port>`
 
+## SSE security token configuration
+
+The Keycloak server URL, client and optional secret can be configured using the following system properties:
+
+| System property    | Description |
+| -------- | ------- |
+quarkus.oidc.auth-server-url | The URL to the keycloak server realm, default to `http://localhost:8180/realms/wildfly-mcp-server` |
+quarkus.oidc.client-id | The client id, default to `token-service` |
+quarkus.oidc.credentials.secret | The client secret, optional, default to `secret` | 
+
 ## Available Tools
 
 ### getWildFlyStatus
@@ -143,8 +162,6 @@ Get the status of the WildFly server running on the provided host and port argum
 **Inputs**:
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
-- `userName`: The admin user name. Optional.
-- `password`: The admin user password. Optional.
 
 ### getWildFlyConsumedMemory
 Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.
@@ -167,8 +184,6 @@ Get the log file content of the WildFly server running on the provided host and 
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 - `numberOfLines`: The optional number of log file lines to retrieve. By default the last 200 lines are retrieved. Use `-1` to get all lines.
-- `userName`: The admin user name. Optional.
-- `password`: The admin user password. Optional.
 
 ### getWildFlyLoggingCategories
 Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments.
@@ -176,8 +191,6 @@ Get the list of the enabled logging categories for the WildFly server running on
 **Inputs**:
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
-- `userName`: The admin user name. Optional.
-- `password`: The admin user password. Optional.
 
 ### enableWildFlyLoggingCategory
 Enable a logging category for the WildFly server running on the provided host and port arguments.
@@ -185,8 +198,6 @@ Enable a logging category for the WildFly server running on the provided host an
 **Inputs**:
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
-- `userName`: The admin user name. Optional.
-- `password`: The admin user password. Optional.
 - `loggingCategory`: The logging category. Can be a high level category (such as `security`, `web`, `http`) or a specific logger (`io.undertow`).
 
 ### disableWildFlyLoggingCategory
@@ -195,8 +206,6 @@ Disable a logging category for the WildFly server running on the provided host a
 **Inputs**:
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
-- `userName`: The admin user name. Optional.
-- `password`: The admin user password. Optional.
 - `loggingCategory`: The logging category. Can be a high level category (such as `security`, `web`, `http`) or a specific logger (`io.undertow`).
 
 ### getWildFlyPrometheusMetrics
@@ -212,8 +221,6 @@ Invoke a single WildFly CLI operation on the WildFly server running on the provi
 **Inputs**:
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
-- `userName`: The admin user name. Optional.
-- `password`: The admin user password. Optional.
 
 ### getWildFlyServerConfiguration
 Gets the server configuration in JSON format of the WildFly server running on the provided host and port arguments.
@@ -221,8 +228,6 @@ Gets the server configuration in JSON format of the WildFly server running on th
 **Inputs**:
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
-- `userName`: The admin user name. Optional.
-- `password`: The admin user password. Optional.
 
 ## Example of questions to ask to the WildFly server
 
@@ -237,11 +242,7 @@ Make sure to first start you WildFly sever.
 
 ### Logging
 
-* Hi, could you connect to the WildFly server running on host localhost and port 9990 with the user name chatbot-user and password foo then enable the security logging?
-* Hi, could you connect to the WildFly server running on host localhost and port 9990 with the user name chatbot-user and password chatbot-user then enable the security logging?
-
-Then attempt to connect to the server with invalid credentials, that the chatbot will analyze in the next question.
-
+* Hi, could you connect to the WildFly server running on host localhost and port 9990 then enable the security logging?
 * Hi, could you connect to the WildFly server and get the content of the log file, analyze it and check for errors?
 * Hi, could you disable the security logging?
 

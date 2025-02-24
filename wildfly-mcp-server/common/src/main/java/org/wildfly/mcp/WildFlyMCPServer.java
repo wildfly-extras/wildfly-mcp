@@ -19,6 +19,7 @@ import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.rest.client.reactive.Url;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.core.Response;
@@ -43,8 +44,6 @@ import org.wildfly.mcp.WildFlyManagementClient.GetLoggersRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggersResponse;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggingFileRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggingFileResponse;
-import org.wildfly.mcp.WildFlyManagementClient.ReadConfigAsXmlRequest;
-import org.wildfly.mcp.WildFlyManagementClient.ReadConfigAsXmlResponse;
 import org.wildfly.mcp.WildFlyManagementClient.RemoveLoggerRequest;
 
 public class WildFlyMCPServer {
@@ -70,14 +69,13 @@ public class WildFlyMCPServer {
     WildFlyHealthClient wildflyHealthClient;
     
     @Tool(description = "Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments.")
+    @RolesAllowed("admin")
     ToolResponse getWildFlyLoggingCategories(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
-            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
         Server server = new Server(host, port);
         try {
-            User user = new User(userName, userPassword);
+            User user = new User();
             GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(server, user));
             Set<String> enabled = new TreeSet<>();
             for (String e : response.result) {
@@ -90,14 +88,13 @@ public class WildFlyMCPServer {
     }
     
     @Tool(description = "Gets the server configuration in JSON format of the WildFly server running on the provided host and port arguments.")
+    @RolesAllowed("admin")
     ToolResponse getWildFlyServerConfiguration(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
-            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
         Server server = new Server(host, port);
         try {
-            User user = new User(userName, userPassword);
+            User user = new User();
             CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
             // This call, if done with the Monitor role, will be filtered. No sensitive information present.
             ModelNode mn = ctx.buildRequest(":read-resource(recursive=true)");
@@ -134,15 +131,14 @@ public class WildFlyMCPServer {
     }
 
     @Tool(description = "Invoke a single WildFly CLI operation on the WildFly server running on the provided host and port arguments.")
+    @RolesAllowed("admin")
     ToolResponse invokeWildFlyCLIOperation(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            String operation,
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
-            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+            String operation) {
         Server server = new Server(host, port);
         try {
-            User user = new User(userName, userPassword);
+            User user = new User();
             CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
             ModelNode mn = ctx.buildRequest(operation);
             // TODO, implement possible rules if needed to disallow some operations.
@@ -154,15 +150,14 @@ public class WildFlyMCPServer {
     }
     
     @Tool(description = "Enable a logging category for the WildFly server running on the provided host and port arguments.")
+    @RolesAllowed("admin")
     ToolResponse enableWildFlyLoggingCategory(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            String loggingCategory,
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
-            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+            String loggingCategory) {
         Server server = new Server(host, port);
         try {
-            User user = new User(userName, userPassword);
+            User user = new User();
             String category = findCategory(loggingCategory);
             GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(server, user));
             if (response.result != null && response.result.contains(category)) {
@@ -176,15 +171,14 @@ public class WildFlyMCPServer {
     }
     
     @Tool(description = "Disable a logging category for the WildFly server running on the provided host and port arguments.")
+    @RolesAllowed("admin")
     ToolResponse disableWildFlyLoggingCategory(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            String loggingCategory,
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
-            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+            String loggingCategory) {
         Server server = new Server(host, port);
         try {
-            User user = new User(userName, userPassword);
+            User user = new User();
             String category = findCategory(loggingCategory);
             GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(server, user));
             if (response.result != null && !response.result.contains(category)) {
@@ -198,15 +192,14 @@ public class WildFlyMCPServer {
     }
     
     @Tool(description = "Get the log file content of the WildFly server running on the provided host and port arguments.")
+    @RolesAllowed("admin")
     ToolResponse getWildFlyLogFileContent(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            @ToolArg(name = "numberOfLines", description = "The optional number of log file lines to retrieve. By default the last 200 lines are retrieved. Use `-1` to get all lines.", required = false) String numLines,
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
-            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+            @ToolArg(name = "numberOfLines", description = "The optional number of log file lines to retrieve. By default the last 200 lines are retrieved. Use `-1` to get all lines.", required = false) String numLines) {
         Server server = new Server(host, port);
         try {
-            User user = new User(userName, userPassword);
+            User user = new User();
             GetLoggingFileResponse response = wildflyClient.call(new GetLoggingFileRequest(server, numLines, user));
             StringBuilder builder = new StringBuilder();
             for (String line : response.result) {
@@ -219,15 +212,14 @@ public class WildFlyMCPServer {
     }
     
     @Tool(description = "Get the status of the WildFly server running on the provided host and port arguments.")
+    @RolesAllowed("admin")
     ToolResponse getWildFlyStatus(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
-            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
         Server server = new Server(host, port);
         try {
-            String consumedMemory = getWildFlyConsumedMemory(host, port, userName, userPassword).content().get(0).asText().text();
-            String cpuUsage = getWildFlyConsumedCPU(host, port, userName, userPassword).content().get(0).asText().text();
+            String consumedMemory = getWildFlyConsumedMemory(host, port).content().get(0).asText().text();
+            String cpuUsage = getWildFlyConsumedCPU(host, port).content().get(0).asText().text();
             // First attempt with health check.
             String url = "http://" + server.host + ":" + server.port + "/health";
             String state = null;
@@ -238,7 +230,7 @@ public class WildFlyMCPServer {
                 // XXX OK, let's try with the management API.
             }
             if (state == null) {
-                User user = new User(userName, userPassword);
+                User user = new User();
                 WildFlyStatus status = wildflyClient.getStatus(server, user);
                 if (status.isOk()) {
                     state = "Server is running.";
@@ -258,13 +250,12 @@ public class WildFlyMCPServer {
     }
     
     @Tool(description = "Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.")
+    @RolesAllowed("admin")
     ToolResponse getWildFlyConsumedMemory(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
-            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
         Server server = new Server(host, port);
-        User user = new User(userName, userPassword);
+        User user = new User();
         try {
             try (JMXSession session = new JMXSession(server, user)) {
                 MemoryMXBean proxy
@@ -283,13 +274,12 @@ public class WildFlyMCPServer {
     }
     
     @Tool(description = "Get the percentage of cpu consumed by the WildFly server running on the provided host and port arguments.")
+    @RolesAllowed("admin")
     ToolResponse getWildFlyConsumedCPU(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            @ToolArg(name = "userName", description = "Optional user name", required = false) String userName,
-            @ToolArg(name = "userPassword", description = "Optional user password", required = false) String userPassword) {
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
         Server server = new Server(host, port);
-        User user = new User(userName, userPassword);
+        User user = new User();
         try {
             try (JMXSession session = new JMXSession(server, user)) {
                 OperatingSystemMXBean proxy
