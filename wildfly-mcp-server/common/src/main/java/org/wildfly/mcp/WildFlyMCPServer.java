@@ -4,6 +4,8 @@
  */
 package org.wildfly.mcp;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.sun.management.OperatingSystemMXBean;
 
 import io.quarkiverse.mcp.server.Prompt;
@@ -211,43 +213,55 @@ public class WildFlyMCPServer {
         }
     }
     
-    @Tool(description = "Get the status of the WildFly server running on the provided host and port arguments.")
-    @RolesAllowed("admin")
-    ToolResponse getWildFlyStatus(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
-        Server server = new Server(host, port);
-        try {
-            String consumedMemory = getWildFlyConsumedMemory(host, port).content().get(0).asText().text();
-            String cpuUsage = getWildFlyConsumedCPU(host, port).content().get(0).asText().text();
-            // First attempt with health check.
-            String url = "http://" + server.host + ":" + server.port + "/health";
-            String state = null;
-            try {
-                List<Status> statusList = wildflyHealthClient.getHealth(url);
-                state = "Server is running.";
-            } catch (Exception ex) {
-                // XXX OK, let's try with the management API.
-            }
-            if (state == null) {
-                User user = new User();
-                WildFlyStatus status = wildflyClient.getStatus(server, user);
-                if (status.isOk()) {
-                    state = "Server is running.";
-                } else {
-                    List<String> ret = new ArrayList<>();
-                    ret.add("Server is in an invalid state");
-                    ret.addAll(status.getStatus());
-                    ret.add(consumedMemory);
-                    ret.add(cpuUsage);
-                    return buildErrorResponse(ret.toArray(String[]::new));
-                }
-            }
-            return buildResponse(state, consumedMemory, cpuUsage);
-        } catch (Exception ex) {
-            return handleException(ex, server, "retrieving the status ");
-        }
-    }
+//    @Tool(description = "Get the status of the WildFly server running on the provided host and port arguments.")
+//    @RolesAllowed("admin")
+//    ToolResponse getWildFlyStatus(
+//            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+//            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+//        Server server = new Server(host, port);
+//        try {
+//            // First attempt with health check.
+//            String url = "http://" + server.host + ":" + server.port + "/health";
+//            String state = null;
+//            try {
+//                String statusList = wildflyHealthClient.getHealth(url);
+//                state = statusList;
+//            } catch (Exception ex) {
+//                // XXX OK, let's try with the management API.
+//            }
+//            String consumedMemory = null;
+//            String cpuUsage = null;
+//            try {
+//                ToolResponse resp = getWildFlyConsumedMemory(host, port);
+//                if (!resp.isError()) {
+//                    consumedMemory = getWildFlyConsumedMemory(host, port).content().get(0).asText().text();
+//                }
+//                resp = getWildFlyConsumedCPU(host, port);
+//                if (!resp.isError()) {
+//                    cpuUsage = getWildFlyConsumedCPU(host, port).content().get(0).asText().text();
+//                }
+//            }  catch (Exception ex) {
+//                // XXX OK, security issue.
+//            }
+//            if (state == null) {
+//                User user = new User();
+//                WildFlyStatus status = wildflyClient.getStatus(server, user);
+//                if (status.isOk()) {
+//                    state = "Server is running.";
+//                } else {
+//                    List<String> ret = new ArrayList<>();
+//                    ret.add("Server is in an invalid state");
+//                    ret.addAll(status.getStatus());
+//                    ret.add(consumedMemory);
+//                    ret.add(cpuUsage);
+//                    return buildErrorResponse(ret.toArray(String[]::new));
+//                }
+//            }
+//            return buildResponse(state, consumedMemory, cpuUsage);
+//        } catch (Exception ex) {
+//            return handleException(ex, server, "retrieving the status ");
+//        }
+//    }
     
     @Tool(description = "Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.")
     @RolesAllowed("admin")
@@ -311,10 +325,35 @@ public class WildFlyMCPServer {
                 }
             }
         } catch (Exception ex) {
-            return handleException(ex, server, "retrieving the consumed CPU");
+            return handleException(ex, server, "retrieving the metrics");
         }
     }
-    
+
+    @Tool(description = "Get the health of the WildFly server running on the provided host and port arguments.")
+    ToolResponse getWildFlyHealth(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+        Server server = new Server(host, port);
+        try {
+            String url = "http://" + server.host + ":" + server.port + "/health";
+            try {
+                return buildResponse(wildflyHealthClient.getHealth(url));
+            } catch (ClientWebApplicationException ex) {
+                if (ex.getResponse().getStatus() == 404) {
+                    User user = new User();
+                    WildFlyStatus status = wildflyClient.getStatus(server, user);
+                    List<String> ret = new ArrayList<>();
+                    ret.addAll(status.getStatus());
+                    return buildResponse(ret.toArray(String[]::new));
+                } else {
+                    throw ex;
+                }
+            }
+        } catch (Exception ex) {
+            return handleException(ex, server, "retrieving the health");
+        }
+    }
+
     @Prompt(name = "wildFly-prometheus-metrics-chart", description = "WildFly, prometheus metrics chart")
     PromptMessage prometheusMetricsChart() {
         return PromptMessage.withUserRole(new TextContent("Using available tools, get Prometheus metrics from wildfly server. " +
@@ -344,7 +383,7 @@ public class WildFlyMCPServer {
     public interface WildFlyHealthClient {
         
         @GET
-        List<Status> getHealth(@Url String url);
+        String getHealth(@Url String url);
     }
     
     private String findCategory(String category) {
