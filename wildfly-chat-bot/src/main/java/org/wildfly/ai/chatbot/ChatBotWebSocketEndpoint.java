@@ -58,6 +58,9 @@ public class ChatBotWebSocketEndpoint {
     @Named(value = "ollama")
     ChatLanguageModel ollama;
     @Inject
+    @Named(value = "mistral")
+    ChatLanguageModel mistral;
+    @Inject
     @Named(value = "openai")
     ChatLanguageModel openai;
     @Inject
@@ -69,6 +72,12 @@ public class ChatBotWebSocketEndpoint {
     @Inject
     @ConfigProperty(name="wildfly.chatbot.llm.name")
     private String llmName;
+    @Inject
+    @ConfigProperty(name="wildfly.chatbot.system.prompt")
+    private String systemPrompt;
+    @Inject
+    @ConfigProperty(name="wildfly.chatbot.welcome.message")
+    private String welcomeMessage;
     private boolean disabledAcceptance;
     private PromptHandler promptHandler;
     private ToolHandler toolHandler;
@@ -148,7 +157,11 @@ public class ChatBotWebSocketEndpoint {
                         if (llmName.equals("groq")) {
                             activeModel = groq;
                         } else {
-                            throw new RuntimeException("Unknown llm model name " + llmName);
+                            if (llmName.equals("mistral")) {
+                                activeModel = mistral;
+                            } else {
+                                throw new RuntimeException("Unknown llm model name " + llmName);
+                            }
                         }
                     }
                 }
@@ -180,12 +193,12 @@ public class ChatBotWebSocketEndpoint {
                     .chatLanguageModel(activeModel)
                     .toolProvider(toolProvider)
                     .systemMessageProvider(chatMemoryId -> {
-                        return promptHandler.getSystemPrompt();
+                        return promptHandler.getSystemPrompt() + (systemPrompt == null ? "" : systemPrompt);
                     })
                     .build();
             Map<String, String> args = new HashMap<>();
             args.put("kind", "simple_text");
-            args.put("value", "Hello, I am a WildFly chatbot that can interact with your WildFly servers, how can I help?");
+            args.put("value", welcomeMessage);
             session.getBasicRemote().sendText(toJson(args));
         } else {
             DefaultTokenProvider dtp = initProviders.remove(0);
