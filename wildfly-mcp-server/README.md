@@ -229,6 +229,23 @@ Gets the server configuration in JSON format of the WildFly server running on th
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 
+### browseDeployment
+Get all the file paths contained inside a deployment deployed in the WildFly server running on the provided host and port arguments. The returned value is in JSON format.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
+- `name`: Optional deployment name. By default ROOT.war is used.
+
+### getDeploymentFileContent
+Get the content of a file located inside a deployment deployed in the WildFly server running on the provided host and port arguments.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
+- `name`: Optional deployment name. By default ROOT.war is used.
+- `path`: Required path to the deployment content.
+
 ## Example of questions to ask to the WildFly server
 
 Make sure to first start you WildFly sever.

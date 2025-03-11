@@ -87,7 +87,8 @@ public class WildFlyMCPServer {
         }
     }
     
-    @Tool(description = "Gets the server configuration in JSON format of the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Gets the server configuration and the deployed applications in JSON format of the WildFly server running on the provided host and port arguments."
+            + "The server configuration contains the server configuration and all the deployments that are runing")
     @RolesAllowed("admin")
     ToolResponse getWildFlyServerConfiguration(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
@@ -113,9 +114,9 @@ public class WildFlyMCPServer {
             return handleException(ex, server, "retrieving the server configuration");
         }
     }
-    @Tool(description = "Get all the file paths contained inside a deployment deployed in the WildFly server running on the provided host and port arguments. The returned value is in JSON format.")
+    @Tool(description = "Get all the file paths contained inside an application deployment deployed in the WildFly server running on the provided host and port arguments. The returned value is in JSON format.")
     @RolesAllowed("admin")
-    ToolResponse browseDeployment(
+    ToolResponse getDeploymentPaths(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
             @ToolArg(name = "name", description = "Optional deployment name. By default ROOT.war is used.", required = false) String name) {
@@ -252,56 +253,6 @@ public class WildFlyMCPServer {
         }
     }
     
-//    @Tool(description = "Get the status of the WildFly server running on the provided host and port arguments.")
-//    @RolesAllowed("admin")
-//    ToolResponse getWildFlyStatus(
-//            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-//            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
-//        Server server = new Server(host, port);
-//        try {
-//            // First attempt with health check.
-//            String url = "http://" + server.host + ":" + server.port + "/health";
-//            String state = null;
-//            try {
-//                String statusList = wildflyHealthClient.getHealth(url);
-//                state = statusList;
-//            } catch (Exception ex) {
-//                // XXX OK, let's try with the management API.
-//            }
-//            String consumedMemory = null;
-//            String cpuUsage = null;
-//            try {
-//                ToolResponse resp = getWildFlyConsumedMemory(host, port);
-//                if (!resp.isError()) {
-//                    consumedMemory = getWildFlyConsumedMemory(host, port).content().get(0).asText().text();
-//                }
-//                resp = getWildFlyConsumedCPU(host, port);
-//                if (!resp.isError()) {
-//                    cpuUsage = getWildFlyConsumedCPU(host, port).content().get(0).asText().text();
-//                }
-//            }  catch (Exception ex) {
-//                // XXX OK, security issue.
-//            }
-//            if (state == null) {
-//                User user = new User();
-//                WildFlyStatus status = wildflyClient.getStatus(server, user);
-//                if (status.isOk()) {
-//                    state = "Server is running.";
-//                } else {
-//                    List<String> ret = new ArrayList<>();
-//                    ret.add("Server is in an invalid state");
-//                    ret.addAll(status.getStatus());
-//                    ret.add(consumedMemory);
-//                    ret.add(cpuUsage);
-//                    return buildErrorResponse(ret.toArray(String[]::new));
-//                }
-//            }
-//            return buildResponse(state, consumedMemory, cpuUsage);
-//        } catch (Exception ex) {
-//            return handleException(ex, server, "retrieving the status ");
-//        }
-//    }
-    
     @Tool(description = "Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.")
     @RolesAllowed("admin")
     ToolResponse getWildFlyConsumedMemory(
@@ -368,7 +319,8 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get the health of the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Get the status of the WildFly server running on the provided host and port arguments. "
+            + "The status contains the server status and all the running deployments names and status")
     ToolResponse getWildFlyHealth(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
