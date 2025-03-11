@@ -4,8 +4,6 @@
  */
 package org.wildfly.mcp;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.sun.management.OperatingSystemMXBean;
 
 import io.quarkiverse.mcp.server.Prompt;
@@ -111,6 +109,47 @@ public class WildFlyMCPServer {
             result.get("subsystem").remove("elytron");
             cleanupUndefined(result);
             return buildResponse(result.toJSONString(false));
+        } catch (Exception ex) {
+            return handleException(ex, server, "retrieving the server configuration");
+        }
+    }
+    @Tool(description = "Get all the file paths contained inside a deployment deployed in the WildFly server running on the provided host and port arguments. The returned value is in JSON format.")
+    @RolesAllowed("admin")
+    ToolResponse browseDeployment(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "name", description = "Optional deployment name. By default ROOT.war is used.", required = false) String name) {
+        Server server = new Server(host, port);
+        try {
+            User user = new User();
+            CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
+            name = (name == null || name.isEmpty()) ? "ROOT.war" : name;
+            ModelNode mn = ctx.buildRequest("/deployment="+name+":browse-content");
+            String value = wildflyClient.call(server, user, mn.toJSONString(false), false);
+            ModelNode node = ModelNode.fromJSONString(value);
+            ModelNode result = node.get("result");
+            return buildResponse(result.toJSONString(false));
+        } catch (Exception ex) {
+            return handleException(ex, server, "browsing the deployment");
+        }
+    }
+
+    @Tool(description = "Get the content of a file located inside a deployment deployed in the WildFly server running on the provided host and port arguments.")
+    @RolesAllowed("admin")
+    ToolResponse getDeploymentFileContent(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "name", description = "Optional deployment name. By default ROOT.war is used.", required = false) String name,
+            @ToolArg(name = "path", description = "File path.", required = true) String path) {
+        Server server = new Server(host, port);
+        try {
+            User user = new User();
+            name = (name == null || name.isEmpty()) ? "ROOT.war" : name;
+            CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
+            // This call, if done with the Monitor role, will be filtered. No sensitive information present.
+            ModelNode mn = ctx.buildRequest("/deployment="+name+":read-content(path="+path+")");
+            String value = wildflyClient.call(server, user, mn.toJSONString(false), true);
+            return buildResponse(value);
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the logging categories");
         }
