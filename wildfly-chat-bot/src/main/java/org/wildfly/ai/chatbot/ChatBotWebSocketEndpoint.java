@@ -17,7 +17,6 @@ import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
-import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
@@ -48,6 +47,7 @@ import java.util.logging.Level;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerSSEConfig;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerStdioConfig;
+import org.wildfly.ai.chatbot.http.HttpMcpTransport;
 
 @ServerEndpoint(value = "/chatbot")
 public class ChatBotWebSocketEndpoint {
@@ -78,7 +78,11 @@ public class ChatBotWebSocketEndpoint {
     private Session session;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
     private final BlockingQueue<String> workQueue = new ArrayBlockingQueue<>(1);
-
+    private final Map<String, DefaultTokenProvider> tokenProviders = new HashMap<>();
+    private final List<DefaultTokenProvider> initProviders = new ArrayList<>();
+    private final List<DefaultMcpClient.Builder> clientBuilders = new ArrayList<>();
+    private ChatLanguageModel activeModel;
+    
     @PostConstruct
     public void init() {
         try {
@@ -104,48 +108,53 @@ public class ChatBotWebSocketEndpoint {
             }
             if (mcpConfig.mcpSSEServers != null) {
                 for (Map.Entry<String, MCPServerSSEConfig> entry : mcpConfig.mcpSSEServers.entrySet()) {
-                    McpTransport transport = new HttpMcpTransport.Builder()
+                    McpTransport transport;
+                    if(entry.getValue().providerUrl != null) {
+                        DefaultTokenProvider tokenProvider = new DefaultTokenProvider();
+                        tokenProvider.name = entry.getKey();
+                        tokenProvider.providerUrl = entry.getValue().providerUrl;
+                        tokenProvider.secret = entry.getValue().secret;
+                        tokenProvider.clientId = entry.getValue().clientId;
+                        tokenProviders.put(entry.getKey(), tokenProvider);
+                        transport = new HttpMcpTransport.Builder()
+                            .timeout(Duration.ZERO)
+                            .tokenProvider(tokenProvider)
+                            .sseUrl(entry.getValue().url)
+                            .build();
+                    } else {
+                        transport = new HttpMcpTransport.Builder()
                             .timeout(Duration.ZERO)
                             .sseUrl(entry.getValue().url)
                             .build();
+                    }
                     transports.add(transport);
-                    McpClient mcpClient = new DefaultMcpClient.Builder()
+                    DefaultMcpClient.Builder builder = new DefaultMcpClient.Builder()
                             .transport(transport)
-                            .clientName(entry.getKey())
-                            .build();
-                    clients.add(new McpClientInterceptor(mcpClient, this));
+                            .clientName(entry.getKey());
+                    clientBuilders.add(builder);
                 }
             }
-            ToolProvider toolProvider = McpToolProvider.builder()
-                    .mcpClients(clients)
-                    .build();
+            initProviders.addAll(tokenProviders.values());
+
             promptHandler = new PromptHandler(transports);
             toolHandler = new ToolHandler(clients);
-            ChatLanguageModel model = null;
             if (llmName != null) {
                 if (llmName.equals("ollama")) {
-                    model = ollama;
+                    activeModel = ollama;
                 } else {
                     if (llmName.equals("openai")) {
-                        model = openai;
+                        activeModel = openai;
                     } else {
                         if (llmName.equals("groq")) {
-                            model = groq;
+                            activeModel = groq;
                         } else {
                             throw new RuntimeException("Unknown llm model name " + llmName);
                         }
                     }
                 }
             } else {
-                model = ollama;
+                activeModel = ollama;
             }
-            bot = AiServices.builder(Bot.class)
-                    .chatLanguageModel(model)
-                    .toolProvider(toolProvider)
-                    .systemMessageProvider(chatMemoryId -> {
-                        return promptHandler.getSystemPrompt();
-                    })
-                    .build();
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -155,12 +164,38 @@ public class ChatBotWebSocketEndpoint {
     public void onOpen(Session session) throws IOException {
         this.session = session;
         logger.info("New websocket session opened: " + session.getId());
-        Map<String, String> args = new HashMap<>();
-        args.put("kind", "simple_text");
-        args.put("value", "Hello, I am a WildFly chatbot that can interact with your WildFly servers, how can I help?");
-        session.getBasicRemote().sendText(toJson(args));
+        login();
     }
 
+    private void login() throws IOException {
+        if (initProviders.isEmpty()) {
+            //Terminate client init
+            for(DefaultMcpClient.Builder builder : clientBuilders) {
+                clients.add(new McpClientInterceptor(builder.build(), this));
+            }
+            ToolProvider toolProvider = McpToolProvider.builder()
+                    .mcpClients(clients)
+                    .build();
+            bot = AiServices.builder(Bot.class)
+                    .chatLanguageModel(activeModel)
+                    .toolProvider(toolProvider)
+                    .systemMessageProvider(chatMemoryId -> {
+                        return promptHandler.getSystemPrompt();
+                    })
+                    .build();
+            Map<String, String> args = new HashMap<>();
+            args.put("kind", "simple_text");
+            args.put("value", "Hello, I am a WildFly chatbot that can interact with your WildFly servers, how can I help?");
+            session.getBasicRemote().sendText(toJson(args));
+        } else {
+            DefaultTokenProvider dtp = initProviders.remove(0);
+            Map<String, String> args = new HashMap<>();
+            args.put("kind", "login");
+            args.put("name", dtp.name);
+            session.getBasicRemote().sendText(toJson(args));
+        }
+    }
+    
     public static String toJson(Object msg) throws JsonProcessingException {
         ObjectWriter ow = new ObjectMapper().writer();
         return ow.writeValueAsString(msg);
@@ -298,6 +333,24 @@ public class ChatBotWebSocketEndpoint {
                 String reply = msgObj.get("value").asText();
                 logger.info("Received tool acceptance message: " + reply);
                 workQueue.offer(reply);
+                return;
+            }
+            if ("login_reply".equals(kind)) {
+                JsonNode login = msgObj.get("value");
+                String tokenProvider = login.get("name").asText();
+                String userName  = login.get("userName").asText();
+                String password = login.get("password").asText();
+                try {
+                    tokenProviders.get(tokenProvider).setCredentials(userName, password);
+                } catch (MCPAuthenticationException ex) {
+                    // add back the provider to the list and attempt login again
+                    initProviders.add(0, tokenProviders.get(tokenProvider));
+                    Map<String, String> map = new HashMap<>();
+                    map.put("kind", "simple_text");
+                    map.put("value", ex.getMessage());
+                    session.getBasicRemote().sendText(toJson(map));
+                }
+                login();
                 return;
             }
             throw new Exception("Unknown message " + kind);

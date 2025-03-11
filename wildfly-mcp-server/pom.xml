@@ -13,6 +13,7 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.18.3</quarkus.platform.version>
+        <quarkus.mcp.version>1.0.0.Beta4</quarkus.mcp.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.0</surefire-plugin.version>
     </properties>
@@ -39,17 +40,17 @@
             <dependency>
                 <groupId>io.quarkiverse.mcp</groupId>
                 <artifactId>quarkus-mcp-server-core</artifactId>
-                <version>1.0.0.Beta2</version>
+                <version>${quarkus.mcp.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkiverse.mcp</groupId>
                 <artifactId>quarkus-mcp-server-stdio</artifactId>
-                <version>1.0.0.Beta2</version>
+                <version>${quarkus.mcp.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkiverse.mcp</groupId>
                 <artifactId>quarkus-mcp-server-sse</artifactId>
-                <version>1.0.0.Beta2</version>
+                <version>${quarkus.mcp.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.remotingjmx</groupId>

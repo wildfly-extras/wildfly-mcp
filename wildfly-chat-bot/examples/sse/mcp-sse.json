@@ -1,0 +1,9 @@
+{
+  "mcpSSEServers": {
+    "WildFly": {
+            "url":"http://localhost:8081/mcp/sse",
+            "providerUrl": "http://localhost:8180/realms/wildfly-mcp-server",
+            "clientId": "token-service"
+    }
+  }
+}
