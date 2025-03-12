@@ -1,0 +1,4 @@
+FROM mirror.gcr.io/openjdk:21-jdk-slim
+WORKDIR /app
+COPY wildfly-mcp-server-stdio-runner.jar ./
+CMD ["java", "-jar", "wildfly-mcp-server-stdio-runner.jar"]
