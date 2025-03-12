@@ -56,6 +56,24 @@ If you are using [jbang](http://jbang.dev), you can add the following json conte
 }
 ```
 
+If you are using the WildFly MCP server container image with podman, you can add the following json content:
+
+```
+{
+  "mcpServers": {
+    "wildfly": {
+            "command": "podman",
+            "args": [
+                     "run",
+                     "--rm",
+                     "-i",
+                     "--network=host",
+                     "quay.io/wildfly-snapshots/wildfly-mcp-server:latest"]
+    }
+  }
+}
+```
+
 * For [claude.ai](http://claude.ai), on Fedora, add it to the file `~/.config/Claude/claude_desktop_config.json`.
 
 * For [MCPHost](https://github.com/mark3labs/mcphost), add to a file named `mcp.json` and call: `./mcphost_Linux_x86_64/mcphost --config [path to the file]/mcp.json --model ollama:llama3.1:8b`
@@ -88,6 +106,8 @@ is integrated in the [MCP protocol specification](https://spec.modelcontextproto
 
 You can set the user name and password that you have been using to secure the WildFly server in the tool shell command using the system properties `-Dorg.wildfly.user.name=<user name>` and `-Dorg.wildfly.user.password=<user password>`
 
+NOTE: When using the container image, `WILDFLY_MCP_SERVER_USER_NAME` and `WILDFLY_MCP_SERVER_USER_PASSWORD` env variables can be used.
+
 ```
 {
   "mcpServers": {
@@ -96,7 +116,7 @@ You can set the user name and password that you have been using to secure the Wi
             "args": ["-Dorg.wildfly.user.name=chatbot-user",
                      "-Dorg.wildfly.user.password=chatbot-user",
                      "-jar",
-                     "[path to the repository]/wildfly-mcp-server/target/wildfly-mcp-server-1.0.0.Final-SNAPSHOT-runner.jar"]
+                     "[path to the repository]/wildfly-mcp-server/stdio/target/wildfly-mcp-server-stdio-runner.jar"]
     }
   }
 }
