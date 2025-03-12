@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -74,7 +75,7 @@ public class ChatBotWebSocketEndpoint {
     private String llmName;
     @Inject
     @ConfigProperty(name="wildfly.chatbot.system.prompt")
-    private String systemPrompt;
+    private Optional<String> systemPrompt;
     @Inject
     @ConfigProperty(name="wildfly.chatbot.welcome.message")
     private String welcomeMessage;
@@ -193,7 +194,7 @@ public class ChatBotWebSocketEndpoint {
                     .chatLanguageModel(activeModel)
                     .toolProvider(toolProvider)
                     .systemMessageProvider(chatMemoryId -> {
-                        return promptHandler.getSystemPrompt() + (systemPrompt == null ? "" : systemPrompt);
+                        return promptHandler.getSystemPrompt() + (systemPrompt.isPresent() ? systemPrompt.get() : "");
                     })
                     .build();
             Map<String, String> args = new HashMap<>();
