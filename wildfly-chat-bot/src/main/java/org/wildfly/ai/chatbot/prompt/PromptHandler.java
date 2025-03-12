@@ -15,12 +15,14 @@ import java.util.concurrent.CompletableFuture;
 import org.wildfly.ai.chatbot.prompt.PromptDescription.PromptArg;
 
 public class PromptHandler {
-
+    
     private static final String SYSTEM_PROMPT = """
                                               You are a smart AI agent that can answer any kind of questions. In addition, 
             you have tools to interact with running WildFly servers and the users
-            will ask you to perform operations like getting status, readling log files, retrieving prometheus metrics.
+            will ask you to perform operations like getting status, readling log files, retrieving prometheus metrics. Make sure to 
+            analyze the tools returned values and provide explaination to the user.
             """;
+
     private final List<McpTransport> transports;
     private final Map<String, McpTransport> promptToTransport = new HashMap<>();
 

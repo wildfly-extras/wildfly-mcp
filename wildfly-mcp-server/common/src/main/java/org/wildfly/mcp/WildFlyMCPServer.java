@@ -87,7 +87,8 @@ public class WildFlyMCPServer {
         }
     }
     
-    @Tool(description = "Gets the server configuration in JSON format of the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Gets the server configuration and the deployed applications in JSON format of the WildFly server running on the provided host and port arguments."
+            + "The server configuration contains the server configuration and all the deployments that are runing")
     @RolesAllowed("admin")
     ToolResponse getWildFlyServerConfiguration(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
@@ -109,6 +110,47 @@ public class WildFlyMCPServer {
             result.get("subsystem").remove("elytron");
             cleanupUndefined(result);
             return buildResponse(result.toJSONString(false));
+        } catch (Exception ex) {
+            return handleException(ex, server, "retrieving the server configuration");
+        }
+    }
+    @Tool(description = "Get all the file paths contained inside an application deployment deployed in the WildFly server running on the provided host and port arguments. The returned value is in JSON format.")
+    @RolesAllowed("admin")
+    ToolResponse getDeploymentPaths(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "name", description = "Optional deployment name. By default ROOT.war is used.", required = false) String name) {
+        Server server = new Server(host, port);
+        try {
+            User user = new User();
+            CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
+            name = (name == null || name.isEmpty()) ? "ROOT.war" : name;
+            ModelNode mn = ctx.buildRequest("/deployment="+name+":browse-content");
+            String value = wildflyClient.call(server, user, mn.toJSONString(false), false);
+            ModelNode node = ModelNode.fromJSONString(value);
+            ModelNode result = node.get("result");
+            return buildResponse(result.toJSONString(false));
+        } catch (Exception ex) {
+            return handleException(ex, server, "browsing the deployment");
+        }
+    }
+
+    @Tool(description = "Get the content of a file located inside a deployment deployed in the WildFly server running on the provided host and port arguments.")
+    @RolesAllowed("admin")
+    ToolResponse getDeploymentFileContent(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "name", description = "Optional deployment name. By default ROOT.war is used.", required = false) String name,
+            @ToolArg(name = "path", description = "File path.", required = true) String path) {
+        Server server = new Server(host, port);
+        try {
+            User user = new User();
+            name = (name == null || name.isEmpty()) ? "ROOT.war" : name;
+            CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
+            // This call, if done with the Monitor role, will be filtered. No sensitive information present.
+            ModelNode mn = ctx.buildRequest("/deployment="+name+":read-content(path="+path+")");
+            String value = wildflyClient.call(server, user, mn.toJSONString(false), true);
+            return buildResponse(value);
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the logging categories");
         }
@@ -211,44 +253,6 @@ public class WildFlyMCPServer {
         }
     }
     
-    @Tool(description = "Get the status of the WildFly server running on the provided host and port arguments.")
-    @RolesAllowed("admin")
-    ToolResponse getWildFlyStatus(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
-        Server server = new Server(host, port);
-        try {
-            String consumedMemory = getWildFlyConsumedMemory(host, port).content().get(0).asText().text();
-            String cpuUsage = getWildFlyConsumedCPU(host, port).content().get(0).asText().text();
-            // First attempt with health check.
-            String url = "http://" + server.host + ":" + server.port + "/health";
-            String state = null;
-            try {
-                List<Status> statusList = wildflyHealthClient.getHealth(url);
-                state = "Server is running.";
-            } catch (Exception ex) {
-                // XXX OK, let's try with the management API.
-            }
-            if (state == null) {
-                User user = new User();
-                WildFlyStatus status = wildflyClient.getStatus(server, user);
-                if (status.isOk()) {
-                    state = "Server is running.";
-                } else {
-                    List<String> ret = new ArrayList<>();
-                    ret.add("Server is in an invalid state");
-                    ret.addAll(status.getStatus());
-                    ret.add(consumedMemory);
-                    ret.add(cpuUsage);
-                    return buildErrorResponse(ret.toArray(String[]::new));
-                }
-            }
-            return buildResponse(state, consumedMemory, cpuUsage);
-        } catch (Exception ex) {
-            return handleException(ex, server, "retrieving the status ");
-        }
-    }
-    
     @Tool(description = "Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.")
     @RolesAllowed("admin")
     ToolResponse getWildFlyConsumedMemory(
@@ -311,10 +315,36 @@ public class WildFlyMCPServer {
                 }
             }
         } catch (Exception ex) {
-            return handleException(ex, server, "retrieving the consumed CPU");
+            return handleException(ex, server, "retrieving the metrics");
         }
     }
-    
+
+    @Tool(description = "Get the status of the WildFly server running on the provided host and port arguments. "
+            + "The status contains the server status and all the running deployments names and status")
+    ToolResponse getWildFlyHealth(
+            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
+            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+        Server server = new Server(host, port);
+        try {
+            String url = "http://" + server.host + ":" + server.port + "/health";
+            try {
+                return buildResponse(wildflyHealthClient.getHealth(url));
+            } catch (ClientWebApplicationException ex) {
+                if (ex.getResponse().getStatus() == 404) {
+                    User user = new User();
+                    WildFlyStatus status = wildflyClient.getStatus(server, user);
+                    List<String> ret = new ArrayList<>();
+                    ret.addAll(status.getStatus());
+                    return buildResponse(ret.toArray(String[]::new));
+                } else {
+                    throw ex;
+                }
+            }
+        } catch (Exception ex) {
+            return handleException(ex, server, "retrieving the health");
+        }
+    }
+
     @Prompt(name = "wildFly-prometheus-metrics-chart", description = "WildFly, prometheus metrics chart")
     PromptMessage prometheusMetricsChart() {
         return PromptMessage.withUserRole(new TextContent("Using available tools, get Prometheus metrics from wildfly server. " +
@@ -344,7 +374,7 @@ public class WildFlyMCPServer {
     public interface WildFlyHealthClient {
         
         @GET
-        List<Status> getHealth(@Url String url);
+        String getHealth(@Url String url);
     }
     
     private String findCategory(String category) {

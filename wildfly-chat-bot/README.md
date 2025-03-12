@@ -12,6 +12,7 @@ A WildFly Chat Bot. This WildFly Bootable jar application is a web based UI allo
 * Ability to select and call mcp tools (allow to debug mcp servers) .
 * Ability to select and use mcp prompts.
 * Acceptance workflow of LLM called tools. You can reject a tool invocation done by the LLM.
+* Configurable system prompt and welcome message.
 
 ## Using the WildFly chatbot container image
 
@@ -48,14 +49,23 @@ This chatbot has also been tried with the `llama3.2:3b` and provided good result
 GROQ_CHAT_MODEL_NAME=llama3-70b-8192 GROQ_API_KEY=<Your groq key> java -jar target/wildfly-chat-bot-bootable.jar -Dwildfly.chatbot.llm.name=groq
 ```
 
+4) Start the chat bot using [mistral](https://mistral.ai/), once started it listens on port `8090`:
+
+```
+MISTRAL_API_KEY=<Your mistral key> java -jar target/wildfly-chat-bot-bootable.jar -Dwildfly.chatbot.llm.name=mistral
+```
+
 ## Configuring the WildFly chatbot
 
-| Env Variable    | Description |
-| -------- | ------- |
-| WILDFLY_CHATBOT_MCP_CONFIG_FILE  | Absolute path to the mcp.json file    |
-| WILDFLY_CHATBOT_LLM_NAME  | The active LLM model (`ollama` or `groq`)    |
-| WILDFLY_MCP_SERVER_USER_NAME  | The default user name to use when connecting to WildFly server |
-| WILDFLY_MCP_SERVER_USER_PASSWORD  | The default user password to use when connecting to WildFly server |
+| Env Variable    | System property |  Description |
+| -------- | ------- | ------- |
+| WILDFLY_CHATBOT_MCP_CONFIG_FILE | wildfly.chatbot.mcp.config.file |Absolute path to the mcp.json file    |
+| WILDFLY_CHATBOT_LLM_NAME  | wildfly.chatbot.llm.name |The active LLM model (`ollama`, `groq` or `mistral`)    |
+| WILDFLY_CHATBOT_SYSTEM_PROMPT |wildfly.chatbot.system.prompt |You can extend the system prompt with some content |
+| WILDFLY_CHATBOT_WELCOME_MESSAGE | wildfly.chatbot.welcome.message |You can replace the welcome message with another message |
+| WILDFLY_MCP_SERVER_USER_NAME  | org.wildfly.user.name |The default user name to use when connecting to WildFly server |
+| WILDFLY_MCP_SERVER_USER_PASSWORD | org.wildfly.user.password | The default user password to use when connecting to WildFly server |
+
 
 ## Configuring the WildFly chatbot for ollama
 
@@ -76,3 +86,13 @@ GROQ_CHAT_MODEL_NAME=llama3-70b-8192 GROQ_API_KEY=<Your groq key> java -jar targ
 | GROQ_CHAT_MODEL_NAME | model, default value `llama3-8b-8192`   |
 | GROQ_CHAT_LOG_REQUEST    | log requests, by default `true`    |
 | GROQ_CHAT_LOG_RESPONSE    | log responses, by default `true`    |
+
+## Configuring the WildFly chatbot for mistral
+
+| Env Variable    | Description |
+| -------- | ------- |
+| MISTRAL_API_KEY   | Your API key |
+| MISTRAL_CHAT_URL  | URL, default value `https://api.mistral.ai/v1`    |
+| MISTRAL_CHAT_MODEL_NAME | model, default value `mistral-small-latest`   |
+| MISTRAL_CHAT_LOG_REQUEST    | log requests, by default `true`    |
+| MISTRAL_CHAT_LOG_RESPONSE    | log responses, by default `true`    |

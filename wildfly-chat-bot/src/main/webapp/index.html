@@ -112,7 +112,11 @@
                    
                     let bubbleElement = document.createElement('chat-bubble');
                     if (msg.kind === "simple_text") {
-                      bubbleElement.innerHTML = marked.parse(msg.value);
+                      if(msg.value.startsWith("<?xml")) {
+                        bubbleElement.innerText = msg.value;
+                      } else {
+                        bubbleElement.innerHTML = marked.parse(msg.value);
+                      }
                     } else {
                         if (msg.kind === "tool_called") {
                             bubbleElement.innerHTML ='<div class="code">called '+ msg.tool+msg.args + "</div>";
