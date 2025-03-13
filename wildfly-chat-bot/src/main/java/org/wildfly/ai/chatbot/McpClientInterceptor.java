@@ -8,6 +8,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.McpClient;
+import dev.langchain4j.mcp.client.ResourceRef;
+import dev.langchain4j.mcp.client.ResourceResponse;
+import dev.langchain4j.mcp.client.ResourceTemplateRef;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +70,21 @@ public class McpClientInterceptor implements McpClient {
     @Override
     public void close() throws Exception {
         delegate.close();
+    }
+
+    @Override
+    public List<ResourceRef> listResources() {
+        return delegate.listResources();
+    }
+
+    @Override
+    public List<ResourceTemplateRef> listResourceTemplates() {
+        return delegate.listResourceTemplates();
+    }
+
+    @Override
+    public ResourceResponse readResource(String string) {
+        return delegate.readResource(string);
     }
 
 }
