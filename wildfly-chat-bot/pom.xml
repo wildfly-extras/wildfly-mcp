@@ -26,7 +26,7 @@
         <jakartaee>10.0.0</jakartaee>
         <version.wildfly.maven.plugin>5.1.2.Final</version.wildfly.maven.plugin>
         <version.wildfly.server>35.0.1.Final</version.wildfly.server>
-        <version.dev.langchain4j>1.0.0-beta1</version.dev.langchain4j>
+        <version.dev.langchain4j>1.0.0-beta2</version.dev.langchain4j>
     </properties>
 
     <licenses>

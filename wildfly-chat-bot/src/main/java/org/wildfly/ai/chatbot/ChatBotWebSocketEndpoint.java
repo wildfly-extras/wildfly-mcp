@@ -68,16 +68,16 @@ public class ChatBotWebSocketEndpoint {
     @Named(value = "groq")
     ChatLanguageModel groq;
     @Inject
-    @ConfigProperty(name="wildfly.chatbot.mcp.config.file")
+    @ConfigProperty(name = "wildfly.chatbot.mcp.config.file")
     private Path mcpConfigFile;
     @Inject
-    @ConfigProperty(name="wildfly.chatbot.llm.name")
+    @ConfigProperty(name = "wildfly.chatbot.llm.name")
     private String llmName;
     @Inject
-    @ConfigProperty(name="wildfly.chatbot.system.prompt")
+    @ConfigProperty(name = "wildfly.chatbot.system.prompt")
     private Optional<String> systemPrompt;
     @Inject
-    @ConfigProperty(name="wildfly.chatbot.welcome.message")
+    @ConfigProperty(name = "wildfly.chatbot.welcome.message")
     private String welcomeMessage;
     private boolean disabledAcceptance;
     private PromptHandler promptHandler;
@@ -92,7 +92,9 @@ public class ChatBotWebSocketEndpoint {
     private final List<DefaultTokenProvider> initProviders = new ArrayList<>();
     private final List<DefaultMcpClient.Builder> clientBuilders = new ArrayList<>();
     private ChatLanguageModel activeModel;
-    
+    private String initExceptionMessage;
+    private String initExceptionContext;
+
     @PostConstruct
     public void init() {
         try {
@@ -102,46 +104,56 @@ public class ChatBotWebSocketEndpoint {
             if (mcpConfig.mcpServers != null) {
                 for (Map.Entry<String, MCPServerStdioConfig> entry : mcpConfig.mcpServers.entrySet()) {
                     List<String> cmd = new ArrayList<>();
-                    cmd.add(entry.getValue().command);
-                    cmd.addAll(entry.getValue().args);
-                    McpTransport transport = new StdioMcpTransport.Builder()
-                            .command(cmd)
-                            .logEvents(true)
-                            .build();
-                    transports.add(transport);
-                    McpClient mcpClient = new DefaultMcpClient.Builder()
-                            .transport(transport)
-                            .clientName(entry.getKey())
-                            .build();
-                    clients.add(new McpClientInterceptor(mcpClient, this));
+                    try {
+                        cmd.add(entry.getValue().command);
+                        cmd.addAll(entry.getValue().args);
+                        McpTransport transport = new StdioMcpTransport.Builder()
+                                .command(cmd)
+                                .logEvents(true)
+                                .build();
+                        transports.add(transport);
+                        McpClient mcpClient = new DefaultMcpClient.Builder()
+                                .transport(transport)
+                                .clientName(entry.getKey())
+                                .build();
+                        clients.add(new McpClientInterceptor(mcpClient, this));
+                    } catch (Exception ex) {
+                        initExceptionContext = "Error initializing MCP server " + entry.getKey() + ". " + cmd;
+                        throw ex;
+                    }
                 }
             }
             if (mcpConfig.mcpSSEServers != null) {
                 for (Map.Entry<String, MCPServerSSEConfig> entry : mcpConfig.mcpSSEServers.entrySet()) {
-                    McpTransport transport;
-                    if(entry.getValue().providerUrl != null) {
-                        DefaultTokenProvider tokenProvider = new DefaultTokenProvider();
-                        tokenProvider.name = entry.getKey();
-                        tokenProvider.providerUrl = entry.getValue().providerUrl;
-                        tokenProvider.secret = entry.getValue().secret;
-                        tokenProvider.clientId = entry.getValue().clientId;
-                        tokenProviders.put(entry.getKey(), tokenProvider);
-                        transport = new HttpMcpTransport.Builder()
-                            .timeout(Duration.ZERO)
-                            .tokenProvider(tokenProvider)
-                            .sseUrl(entry.getValue().url)
-                            .build();
-                    } else {
-                        transport = new HttpMcpTransport.Builder()
-                            .timeout(Duration.ZERO)
-                            .sseUrl(entry.getValue().url)
-                            .build();
+                    try {
+                        McpTransport transport;
+                        if (entry.getValue().providerUrl != null) {
+                            DefaultTokenProvider tokenProvider = new DefaultTokenProvider();
+                            tokenProvider.name = entry.getKey();
+                            tokenProvider.providerUrl = entry.getValue().providerUrl;
+                            tokenProvider.secret = entry.getValue().secret;
+                            tokenProvider.clientId = entry.getValue().clientId;
+                            tokenProviders.put(entry.getKey(), tokenProvider);
+                            transport = new HttpMcpTransport.Builder()
+                                    .timeout(Duration.ZERO)
+                                    .tokenProvider(tokenProvider)
+                                    .sseUrl(entry.getValue().url)
+                                    .build();
+                        } else {
+                            transport = new HttpMcpTransport.Builder()
+                                    .timeout(Duration.ZERO)
+                                    .sseUrl(entry.getValue().url)
+                                    .build();
+                        }
+                        transports.add(transport);
+                        DefaultMcpClient.Builder builder = new DefaultMcpClient.Builder()
+                                .transport(transport)
+                                .clientName(entry.getKey());
+                        clientBuilders.add(builder);
+                    } catch (Exception ex) {
+                        initExceptionContext = "Error initializing MCP server " + entry.getKey();
+                        throw ex;
                     }
-                    transports.add(transport);
-                    DefaultMcpClient.Builder builder = new DefaultMcpClient.Builder()
-                            .transport(transport)
-                            .clientName(entry.getKey());
-                    clientBuilders.add(builder);
                 }
             }
             initProviders.addAll(tokenProviders.values());
@@ -170,21 +182,49 @@ public class ChatBotWebSocketEndpoint {
                 activeModel = ollama;
             }
         } catch (Exception ex) {
-            throw new RuntimeException(ex);
+            logger.log(Level.SEVERE, ex.getMessage(), ex);
+            handleException(ex);
         }
     }
 
+    private void handleException(Exception ex) {
+        initExceptionMessage = ex.getMessage();
+    }
+
     @OnOpen
-    public void onOpen(Session session) throws IOException {
+    public void onOpen(Session session) throws Exception {
         this.session = session;
         logger.info("New websocket session opened: " + session.getId());
-        login();
+        if (initExceptionMessage == null) {
+            try {
+                login();
+            } catch (Exception ex) {
+                handleException(ex);
+                reportException();
+            }
+        } else {
+            reportException();
+        }
+    }
+
+    private boolean reportException() throws Exception {
+        if (initExceptionMessage != null) {
+            Map<String, String> args = new HashMap<>();
+            initExceptionContext = initExceptionContext == null ? "An exception occured" : initExceptionContext;
+            args.put("kind", "simple_text");
+            args.put("value", "<b>Error, chat bot initialization failed.</b>\n * " 
+                    + initExceptionContext + "\n * Exception message: \n" 
+                    + initExceptionMessage + "\n <p>Please check the chat bot traces to fix the problem.</p>");
+            session.getBasicRemote().sendText(toJson(args));
+            return true;
+        }
+        return false;
     }
 
     private void login() throws IOException {
         if (initProviders.isEmpty()) {
             //Terminate client init
-            for(DefaultMcpClient.Builder builder : clientBuilders) {
+            for (DefaultMcpClient.Builder builder : clientBuilders) {
                 clients.add(new McpClientInterceptor(builder.build(), this));
             }
             ToolProvider toolProvider = McpToolProvider.builder()
@@ -209,7 +249,7 @@ public class ChatBotWebSocketEndpoint {
             session.getBasicRemote().sendText(toJson(args));
         }
     }
-    
+
     public static String toJson(Object msg) throws JsonProcessingException {
         ObjectWriter ow = new ObjectMapper().writer();
         return ow.writeValueAsString(msg);
@@ -232,7 +272,7 @@ public class ChatBotWebSocketEndpoint {
 
     boolean canCallTool(String tool, String args) {
         try {
-            if(disabledAcceptance) {
+            if (disabledAcceptance) {
                 return true;
             }
             logger.info("Can call: " + tool + args);
@@ -262,7 +302,10 @@ public class ChatBotWebSocketEndpoint {
     @OnMessage
     public void onMessage(String question, Session session) throws IOException {
         try {
-            logger.info("NEW MESSAGE " + question);
+            // In case we have an exception during initialization
+            if (reportException()) {
+                return;
+            }
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode msgObj = objectMapper.readTree(question);
             String kind = msgObj.get("kind").asText();
@@ -295,7 +338,7 @@ public class ChatBotWebSocketEndpoint {
                 map.put("kind", "emulate_user_question");
                 map.put("value", userPrompt);
                 session.getBasicRemote().sendText(toJson(map));
-                
+
                 return;
             }
             if ("call_tool".equals(kind)) {
@@ -352,7 +395,7 @@ public class ChatBotWebSocketEndpoint {
             if ("login_reply".equals(kind)) {
                 JsonNode login = msgObj.get("value");
                 String tokenProvider = login.get("name").asText();
-                String userName  = login.get("userName").asText();
+                String userName = login.get("userName").asText();
                 String password = login.get("password").asText();
                 try {
                     tokenProviders.get(tokenProvider).setCredentials(userName, password);
