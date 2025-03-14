@@ -48,13 +48,10 @@ public class McpClientInterceptor implements McpClient {
             return ret;
         } else {
             
-            /**
-             * From the MCP specification: { "jsonrpc": "2.0", "id": 2,
-             * "result": { "content": [ { "type": "text", "text": "Current
-             * weather in New York:\nTemperature: 72°F\nConditions: Partly
-             * cloudy" } ], "isError": false } }
-             */
-            long id = ter.id() == null ? 1l : Long.parseLong(ter.id());
+            // ID can be a long or a String, not properly handled in langchain4j
+            // long id = ter.id() == null ? 1l : Long.parseLong(ter.id());
+            // Tracked by https://github.com/langchain4j/langchain4j/issues/2701
+            long id = 1l;
             DeniedToolCallResponse response = new DeniedToolCallResponse(id);
 
             try {
