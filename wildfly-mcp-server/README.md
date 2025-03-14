@@ -58,6 +58,8 @@ If you are using [jbang](http://jbang.dev), you can add the following json conte
 
 If you are using the WildFly MCP server container image with podman, you can add the following json content:
 
+NOTE: You must first pull the `quay.io/wildfly-snapshots/wildfly-mcp-server:latest` image.
+
 ```
 {
   "mcpServers": {
