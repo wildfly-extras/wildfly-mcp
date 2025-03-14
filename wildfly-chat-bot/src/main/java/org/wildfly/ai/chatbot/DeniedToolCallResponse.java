@@ -15,11 +15,14 @@ import java.util.Map;
  *
  * @author jdenise
  */
-public class DeniedToolCallResponse extends McpClientMessage {
+public class DeniedToolCallResponse {
 
+    public final String jsonrpc = "2.0";
     public Map<String,Object> result = new HashMap<>();
-    public DeniedToolCallResponse(Long id) {
-        super(id);
+    public final String id;
+
+    public DeniedToolCallResponse(String id) {
+        this.id = id;
         List<Map<String,String>> lst = new ArrayList<>();
         Map<String, String> content = new HashMap<>();
         lst.add(content);
