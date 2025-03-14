@@ -18,6 +18,7 @@ import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.tool.ToolProvider;
@@ -233,6 +234,7 @@ public class ChatBotWebSocketEndpoint {
             bot = AiServices.builder(Bot.class)
                     .chatLanguageModel(activeModel)
                     .toolProvider(toolProvider)
+                    .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
                     .systemMessageProvider(chatMemoryId -> {
                         return promptHandler.getSystemPrompt() + (systemPrompt.isPresent() ? systemPrompt.get() : "");
                     })
