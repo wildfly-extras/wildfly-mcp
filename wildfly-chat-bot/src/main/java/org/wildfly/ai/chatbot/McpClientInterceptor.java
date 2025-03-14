@@ -47,11 +47,7 @@ public class McpClientInterceptor implements McpClient {
             endpoint.traceToolCalled(ter.name(), ter.arguments(), ret);
             return ret;
         } else {
-            
-            // ID can be a long or a String, not properly handled in langchain4j
-            // long id = ter.id() == null ? 1l : Long.parseLong(ter.id());
-            // Tracked by https://github.com/langchain4j/langchain4j/issues/2701
-            long id = 1l;
+            String id = ter.id() == null ? "1" : ter.id();
             DeniedToolCallResponse response = new DeniedToolCallResponse(id);
 
             try {
