@@ -234,7 +234,6 @@ public class ChatBotWebSocketEndpoint {
             bot = AiServices.builder(Bot.class)
                     .chatLanguageModel(activeModel)
                     .toolProvider(toolProvider)
-                    .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
                     .systemMessageProvider(chatMemoryId -> {
                         return promptHandler.getSystemPrompt() + (systemPrompt.isPresent() ? systemPrompt.get() : "");
                     })

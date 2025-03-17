@@ -185,15 +185,9 @@ Get the status of the WildFly server running on the provided host and port argum
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 
-### getWildFlyConsumedMemory
-Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.
-
-**Inputs**:
-- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
-- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
-
-### getWildFlyConsumedCPU
-Get the percentage of cpu consumed by the WildFly server running on the provided host and port arguments.
+### getJVMInfo
+Get the JVM (Java VM) information (version, input arguments, startime, uptime, consumed memory, consumed cpu) 
+as JSON format. The Java VM is the one used to execute the WildFly server running on the provided host and port arguments.
 
 **Inputs**:
 - `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
@@ -267,6 +261,22 @@ Get the content of a file located inside a deployment deployed in the WildFly se
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 - `name`: Optional deployment name. By default ROOT.war is used.
 - `path`: Required path to the deployment content.
+
+## Available prompts
+
+Prompts are pre-built complex questions that you can invoke from your chat bot.
+
+### wildFly-prometheus-metrics-chart
+Build a table and chart from WildFly prometheus metrics.
+
+### securityAudit
+WildFly, security audit. Analyze the server log file for potential attacks.
+
+### wildFly-resources-consumption
+WildFly and JVM resource consumption status. Analyze the consumed resources.
+
+### wildFly-deployment-errors
+WildFly deployed applications, identify potential for errors.
 
 ## Example of questions to ask to the WildFly server
 

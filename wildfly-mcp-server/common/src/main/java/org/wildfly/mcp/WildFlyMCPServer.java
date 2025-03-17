@@ -4,6 +4,9 @@
  */
 package org.wildfly.mcp;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.sun.management.OperatingSystemMXBean;
 
 import io.quarkiverse.mcp.server.Prompt;
@@ -23,10 +26,13 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.core.Response;
+import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
+import java.lang.management.RuntimeMXBean;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
@@ -47,27 +53,27 @@ import org.wildfly.mcp.WildFlyManagementClient.GetLoggingFileResponse;
 import org.wildfly.mcp.WildFlyManagementClient.RemoveLoggerRequest;
 
 public class WildFlyMCPServer {
-    
+
     static final Logger LOGGER = Logger.getLogger("org.wildfly.mcp.WildFlyMCPServer");
-    
+
     public record Status(
             String name,
             String outcome,
             List<HealthValue> data) {
-        
+
     }
-    
+
     public record HealthValue(
             String value) {
-        
+
     }
-    
+
     WildFlyManagementClient wildflyClient = new WildFlyManagementClient();
     @RestClient
     WildFlyMetricsClient wildflyMetricsClient;
     @RestClient
     WildFlyHealthClient wildflyHealthClient;
-    
+
     @Tool(description = "Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments.")
     @RolesAllowed("admin")
     ToolResponse getWildFlyLoggingCategories(
@@ -86,7 +92,7 @@ public class WildFlyMCPServer {
             return handleException(ex, server, "retrieving the logging categories");
         }
     }
-    
+
     @Tool(description = "Gets the server configuration and the deployed applications in JSON format of the WildFly server running on the provided host and port arguments."
             + "The server configuration contains the server configuration and all the deployments that are runing")
     @RolesAllowed("admin")
@@ -114,6 +120,7 @@ public class WildFlyMCPServer {
             return handleException(ex, server, "retrieving the server configuration");
         }
     }
+
     @Tool(description = "Get all the file paths contained inside an application deployment deployed in the WildFly server running on the provided host and port arguments. The returned value is in JSON format.")
     @RolesAllowed("admin")
     ToolResponse getDeploymentPaths(
@@ -125,7 +132,7 @@ public class WildFlyMCPServer {
             User user = new User();
             CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
             name = (name == null || name.isEmpty()) ? "ROOT.war" : name;
-            ModelNode mn = ctx.buildRequest("/deployment="+name+":browse-content");
+            ModelNode mn = ctx.buildRequest("/deployment=" + name + ":browse-content");
             String value = wildflyClient.call(server, user, mn.toJSONString(false), false);
             ModelNode node = ModelNode.fromJSONString(value);
             ModelNode result = node.get("result");
@@ -148,26 +155,27 @@ public class WildFlyMCPServer {
             name = (name == null || name.isEmpty()) ? "ROOT.war" : name;
             CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
             // This call, if done with the Monitor role, will be filtered. No sensitive information present.
-            ModelNode mn = ctx.buildRequest("/deployment="+name+":read-content(path="+path+")");
+            ModelNode mn = ctx.buildRequest("/deployment=" + name + ":read-content(path=" + path + ")");
             String value = wildflyClient.call(server, user, mn.toJSONString(false), true);
             return buildResponse(value);
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the logging categories");
         }
     }
+
     private static void cleanupUndefined(ModelNode mn) {
         Set<String> toRemove = new HashSet<>();
-        for(String key : mn.keys()) {
+        for (String key : mn.keys()) {
             ModelNode field = mn.get(key);
             if (!field.isDefined()) {
                 toRemove.add(key);
             } else {
-                if(field.getType() == ModelType.OBJECT) {
+                if (field.getType() == ModelType.OBJECT) {
                     cleanupUndefined(field);
                 }
             }
         }
-        for(String k : toRemove) {
+        for (String k : toRemove) {
             mn.remove(k);
         }
     }
@@ -190,7 +198,7 @@ public class WildFlyMCPServer {
             return handleException(ex, server, "invoking operations ");
         }
     }
-    
+
     @Tool(description = "Enable a logging category for the WildFly server running on the provided host and port arguments.")
     @RolesAllowed("admin")
     ToolResponse enableWildFlyLoggingCategory(
@@ -211,7 +219,7 @@ public class WildFlyMCPServer {
             return handleException(ex, server, "enabling the logger " + loggingCategory);
         }
     }
-    
+
     @Tool(description = "Disable a logging category for the WildFly server running on the provided host and port arguments.")
     @RolesAllowed("admin")
     ToolResponse disableWildFlyLoggingCategory(
@@ -232,7 +240,7 @@ public class WildFlyMCPServer {
             return handleException(ex, server, "disabling the logger " + loggingCategory);
         }
     }
-    
+
     @Tool(description = "Get the log file content of the WildFly server running on the provided host and port arguments.")
     @RolesAllowed("admin")
     ToolResponse getWildFlyLogFileContent(
@@ -252,52 +260,54 @@ public class WildFlyMCPServer {
             return handleException(ex, server, "retrieving the log file ");
         }
     }
-    
-    @Tool(description = "Get the percentage of memory consumed by the WildFly server running on the provided host and port arguments.")
+
+    @Tool(description = "Get the JVM (Java VM) information (version, input arguments, startime, uptime, consumed memory, consumed cpu) as JSON format. The Java VM is the one used to execute the WildFly server running on the provided host and port arguments.")
     @RolesAllowed("admin")
-    ToolResponse getWildFlyConsumedMemory(
+    ToolResponse getJVMInfo(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
         Server server = new Server(host, port);
         User user = new User();
         try {
             try (JMXSession session = new JMXSession(server, user)) {
-                MemoryMXBean proxy
+                RuntimeMXBean proxy
+                        = ManagementFactory.newPlatformMXBeanProxy(session.connection,
+                                ManagementFactory.RUNTIME_MXBEAN_NAME,
+                                RuntimeMXBean.class);
+                VMInfo info = new VMInfo();
+                info.name = proxy.getName();
+                info.inputArguments = proxy.getInputArguments();
+                info.specName = proxy.getSpecName();
+                info.specVendor = proxy.getSpecVendor();
+                info.specVersion = proxy.getSpecVersion();
+                info.startTime = "" + new Date(proxy.getStartTime());
+                info.upTime = (proxy.getUptime() / 1000) + "seconds";
+                info.vmName = proxy.getVmName();
+                info.vmVendor = proxy.getVmVendor();
+                info.vmVersion = proxy.getVmVersion();
+
+                OperatingSystemMXBean proxy2
+                        = ManagementFactory.newPlatformMXBeanProxy(session.connection,
+                                ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME,
+                                OperatingSystemMXBean.class);
+                double val = proxy2.getProcessCpuLoad();
+                info.consumedCPU = "" + (int) val + "%";
+
+                MemoryMXBean proxy3
                         = ManagementFactory.newPlatformMXBeanProxy(session.connection,
                                 ManagementFactory.MEMORY_MXBEAN_NAME,
                                 MemoryMXBean.class);
-                double max = proxy.getHeapMemoryUsage().getMax();
-                double used = proxy.getHeapMemoryUsage().getUsed();
+                double max = proxy3.getHeapMemoryUsage().getMax();
+                double used = proxy3.getHeapMemoryUsage().getUsed();
                 double result = (used * 100) / max;
-                //int remains = 100 - (int)result;
-                return buildResponse("The percentage of consumed memory is " + (int) result + "%");
+                info.consumedMemory = "" + (int) result + "%";
+                return buildResponse(toJson(info));
             }
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the consumed memory");
         }
     }
-    
-    @Tool(description = "Get the percentage of cpu consumed by the WildFly server running on the provided host and port arguments.")
-    @RolesAllowed("admin")
-    ToolResponse getWildFlyConsumedCPU(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
-        Server server = new Server(host, port);
-        User user = new User();
-        try {
-            try (JMXSession session = new JMXSession(server, user)) {
-                OperatingSystemMXBean proxy
-                        = ManagementFactory.newPlatformMXBeanProxy(session.connection,
-                                ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME,
-                                OperatingSystemMXBean.class);
-                double val = proxy.getProcessCpuLoad();
-                return buildResponse("The percentage of consumed cpu is " + (int) val * 100 + "%");
-            }
-        } catch (Exception ex) {
-            return handleException(ex, server, "retrieving the consumed CPU");
-        }
-    }
-    
+
     @Tool(description = "Get the metrics (in prometheus format) of the WildFly server running on the provided host and port arguments.")
     ToolResponse getWildFlyPrometheusMetrics(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
@@ -317,6 +327,11 @@ public class WildFlyMCPServer {
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the metrics");
         }
+    }
+
+    String toJson(Object value) throws JsonProcessingException {
+        ObjectWriter ow = new ObjectMapper().writer();
+        return ow.writeValueAsString(value);
     }
 
     @Tool(description = "Get the status of the WildFly server running on the provided host and port arguments. "
@@ -346,37 +361,74 @@ public class WildFlyMCPServer {
     }
 
     @Prompt(name = "wildFly-prometheus-metrics-chart", description = "WildFly, prometheus metrics chart")
-    PromptMessage prometheusMetricsChart() {
-        return PromptMessage.withUserRole(new TextContent("Using available tools, get Prometheus metrics from wildfly server. " +
-            "You will repeat the invocation 3 times, being sure to wait 2 seconds between each invocation. " + 
-            "After all the 3 invocation has been completed you will organize the data in a table. " + 
-            "Then you will use this table to create a bar chart to visually compare the data. " + 
-            "Be sure to use at least 5 different data column and be sure to represent all data as bar in the chart"));
+    PromptMessage prometheusMetricsChart(@PromptArg(name = "host",
+            description = "Optional WildFly server host name. By default localhost is used.",
+            required = false) String host,
+            @PromptArg(name = "port",
+                    description = "Optional WildFly server port. By default 9990 is used.",
+                    required = false) String port) {
+        Server server = new Server(host, port);
+        return PromptMessage.withUserRole(new TextContent("Using available tools, get Prometheus metrics from wildfly server Wildfly server running on host " + server.host + ", port " + server.port
+                + ". You will repeat the invocation 3 times, being sure to wait 5 seconds between each invocation. "
+                + "After all the 3 invocation has been completed you will organize the data in a table. "
+                + "Then you will use this table to create a bar chart to visually compare the data. "
+                + "Be sure to use at least 5 different data column and be sure to represent all data as bar in the chart"));
+    }
+
+    @Prompt(name = "wildFly-security-audit", description = "WildFly, security audit. Analyze the server log file for potential attacks")
+    PromptMessage securityAudit(@PromptArg(name = "loggingCategories",
+            description = "Comma separated list of logging categories to enable. By default the security category is enabled.",
+            required = false) String arg,
+            @PromptArg(name = "host",
+                    description = "Optional WildFly server host name. By default localhost is used.",
+                    required = false) String host,
+            @PromptArg(name = "port",
+                    description = "Optional WildFly server port. By default 9990 is used.",
+                    required = false) String port) {
+        Server server = new Server(host, port);
+        String additionalCategories = (arg == null || arg.isEmpty()) ? "" : " " + arg;
+        return PromptMessage.withUserRole(new TextContent("Using available tools, enable the org.wildfly.security" + additionalCategories + " logging categories of the Wildfly server running on host " + server.host + ", port " + server.port
+                + ". Then wait 10 seconds. Finally get the server log file, analyze it and report issues related to authentication failures."));
+    }
+
+    @Prompt(name = "wildFly-resources-consumption", description = "WildFly and JVM resource consumption status. Analyze the consumed resources.")
+    PromptMessage consumedResources(@PromptArg(name = "host",
+            description = "Optional WildFly server host name. By default localhost is used.",
+            required = false) String host,
+            @PromptArg(name = "port",
+                    description = "Optional WildFly server port. By default 9990 is used.",
+                    required = false) String port) {
+        Server server = new Server(host, port);
+        return PromptMessage.withUserRole(new TextContent("Using available tools, Could you check the consumed resources of the JVM and the Wildfly server running on host " + server.host + ", port " + server.port + ": consumed memory, max memory and cpu utilization, prometheus metrics. Mainly anything that could impact running my application. In addition could you verify that the JVM input arguments are well suited to run my server? "
+                + "Your reply should be short with a strong focus on what is wrong, how the JVM arguments are set and the recommendations."));
     }
     
-    @Prompt(name = "wildFly-security-audit", description = "WildFly, security audit. Analyze the server log file for potential attacks")
-    PromptMessage securityAudit(@PromptArg(name = "loggingCategories", 
-            description = "Comma separated list of logging categories to enable. By default the security category is enabled.", 
-            required=false) String arg) {
-        String additionalCategories = (arg == null || arg.isEmpty()) ? "" : " " + arg;
-        return PromptMessage.withUserRole(new TextContent("Using available tools, enable the org.wildfly.security"+ additionalCategories + " logging categories. " +
-                "Then wait 10 seconds. Finally get the server log file, analyze it and report any issue related to security."));
+    @Prompt(name = "wildFly-deployment-errors", description = "WildFly deployed applications, identify potential for errors.")
+    PromptMessage deploymentError(@PromptArg(name = "host",
+            description = "Optional WildFly server host name. By default localhost is used.",
+            required = false) String host,
+            @PromptArg(name = "port",
+                    description = "Optional WildFly server port. By default 9990 is used.",
+                    required = false) String port) {
+        Server server = new Server(host, port);
+        return PromptMessage.withUserRole(new TextContent("Using available tools, Could you check that the deployed applications in the Wildfly server running on host " + server.host + ", port " + server.port + " are correct? Correct means that there are no error related to the deployment in the server log files. "
+                + "Incorrect means that there are errors and possibly exceptions related to the deployment. If you found an incorrect state, please access the web.xml and jboss-web.xml file and check for faulty content that could explain the error seen in the log file."));
     }
 
     @RegisterRestClient(baseUri = "http://foo:9990/metrics/")
     public interface WildFlyMetricsClient {
-        
+
         @GET
         String getMetrics(@Url String url);
     }
-    
+
     @RegisterRestClient(baseUri = "http://foo:9990/health")
     public interface WildFlyHealthClient {
-        
+
         @GET
         String getHealth(@Url String url);
     }
-    
+
     private String findCategory(String category) {
         category = category.toLowerCase();
         if (category.contains("security")) {
@@ -388,7 +440,7 @@ public class WildFlyMCPServer {
             return category.trim();
         }
     }
-    
+
     Set<String> getHighLevelCategory(String logger) {
         Set<String> hc = new TreeSet<>();
         if (logger.equals("org.wildfly.security")) {
@@ -403,7 +455,7 @@ public class WildFlyMCPServer {
         }
         return hc;
     }
-    
+
     private ToolResponse handleException(Exception ex, Server server, String action) {
         LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
         if (ex instanceof ClientWebApplicationException clientWebApplicationException) {
@@ -426,15 +478,15 @@ public class WildFlyMCPServer {
             }
         }
     }
-    
+
     private ToolResponse buildResponse(String... content) {
         return buildResponse(false, content);
     }
-    
+
     private ToolResponse buildErrorResponse(String... content) {
         return buildResponse(true, content);
     }
-    
+
     private ToolResponse buildResponse(boolean isError, String... content) {
         List<TextContent> lst = new ArrayList<>();
         for (String str : content) {
