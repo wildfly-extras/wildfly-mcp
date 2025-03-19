@@ -17,10 +17,8 @@ import org.wildfly.ai.chatbot.prompt.PromptDescription.PromptArg;
 public class PromptHandler {
     
     private static final String SYSTEM_PROMPT = """
-                                              You are a smart AI agent that can answer any kind of questions. In addition, 
-            you have tools to interact with running WildFly servers and the users
-            will ask you to perform operations like getting status, readling log files, retrieving prometheus metrics. Make sure to 
-            analyze the tools returned values and provide explaination to the user.
+                                              You are a smart AI agent expert in WildFly/Java application monitoring. 
+                                              You have tools to interact with running WildFly servers that run by default on localhost and port 9990.
             """;
 
     private final List<McpTransport> transports;

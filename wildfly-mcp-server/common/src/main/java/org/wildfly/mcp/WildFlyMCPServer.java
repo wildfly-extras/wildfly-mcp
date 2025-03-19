@@ -73,11 +73,11 @@ public class WildFlyMCPServer {
     @RestClient
     WildFlyHealthClient wildflyHealthClient;
 
-    @Tool(description = "Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Get the list of the enabled logging categories")
     @RolesAllowed("admin")
     ToolResponse getWildFlyLoggingCategories(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port) {
         Server server = new Server(host, port);
         try {
             User user = new User();
@@ -92,12 +92,11 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Gets the server configuration and the deployed applications in JSON format of the WildFly server running on the provided host and port arguments."
-            + "The server configuration contains the server configuration and all the deployments that are runing")
+    @Tool(description = "Gets the server configuration.")
     @RolesAllowed("admin")
     ToolResponse getWildFlyServerConfiguration(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port) {
         Server server = new Server(host, port);
         try {
             User user = new User();
@@ -122,12 +121,12 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get all the file paths contained inside an application deployment deployed in the WildFly server running on the provided host and port arguments. The returned value is in JSON format.")
+    @Tool(description = "Get all the file paths contained inside an application deployment.")
     @RolesAllowed("admin")
     ToolResponse getDeploymentPaths(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            @ToolArg(name = "name", description = "Optional deployment name. By default ROOT.war is used.", required = false) String name) {
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port,
+            @ToolArg(name = "name", required = false) String name) {
         Server server = new Server(host, port);
         try {
             User user = new User();
@@ -143,13 +142,13 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get the content of a file located inside a deployment deployed in the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Get the content of a file located inside a deployment.")
     @RolesAllowed("admin")
     ToolResponse getDeploymentFileContent(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            @ToolArg(name = "name", description = "Optional deployment name. By default ROOT.war is used.", required = false) String name,
-            @ToolArg(name = "path", description = "File path.", required = true) String path) {
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port,
+            @ToolArg(name = "name", required = false) String name,
+            @ToolArg(name = "path", required = true) String path) {
         Server server = new Server(host, port);
         try {
             User user = new User();
@@ -181,11 +180,11 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Invoke a single WildFly CLI operation on the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Invoke a WildFly CLI operation.")
     @RolesAllowed("admin")
     ToolResponse invokeWildFlyCLIOperation(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port,
             String operation) {
         Server server = new Server(host, port);
         try {
@@ -200,11 +199,11 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Enable a logging category for the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Enable a logging category.")
     @RolesAllowed("admin")
     ToolResponse enableWildFlyLoggingCategory(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port,
             String loggingCategory) {
         Server server = new Server(host, port);
         try {
@@ -221,11 +220,11 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Disable a logging category for the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Disable a logging category.")
     @RolesAllowed("admin")
     ToolResponse disableWildFlyLoggingCategory(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port,
             String loggingCategory) {
         Server server = new Server(host, port);
         try {
@@ -242,12 +241,12 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get the log file content of the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Get the log file content.")
     @RolesAllowed("admin")
     ToolResponse getWildFlyLogFileContent(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port,
-            @ToolArg(name = "numberOfLines", description = "The optional number of log file lines to retrieve. By default the last 200 lines are retrieved. Use `-1` to get all lines.", required = false) String numLines) {
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port,
+            @ToolArg(name = "numberOfLines", description = "200 by default, use `-1` for all lines.", required = false) String numLines) {
         Server server = new Server(host, port);
         try {
             User user = new User();
@@ -262,11 +261,11 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get the WildFly Server and JVM (Java VM) information (server version, java version, input arguments, startime, uptime, consumed memory, consumed cpu) as JSON format. The Java VM is the one used to execute the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Get the Server version and JVM configuration.")
     @RolesAllowed("admin")
-    ToolResponse getServerInfo(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+    ToolResponse getWildFlyServerInfo(
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port) {
         Server server = new Server(host, port);
         User user = new User();
         try {
@@ -321,10 +320,10 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get the metrics (in prometheus format) of the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Get the prometheus metrics.")
     ToolResponse getWildFlyPrometheusMetrics(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port) {
         Server server = new Server(host, port);
         try {
             String url = "http://" + server.host + ":" + server.port + "/metrics";
@@ -347,11 +346,10 @@ public class WildFlyMCPServer {
         return ow.writeValueAsString(value);
     }
 
-    @Tool(description = "Get the status of the WildFly server running on the provided host and port arguments. "
-            + "The status contains the server status and all the running deployments names and status")
+    @Tool(description = "Get the status of the WildFly server and deployments.")
     ToolResponse getWildFlyHealth(
-            @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
-            @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port) {
         Server server = new Server(host, port);
         try {
             String url = "http://" + server.host + ":" + server.port + "/health";
