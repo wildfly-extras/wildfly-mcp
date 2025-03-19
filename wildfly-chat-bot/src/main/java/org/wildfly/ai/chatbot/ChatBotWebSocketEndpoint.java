@@ -66,6 +66,9 @@ public class ChatBotWebSocketEndpoint {
     @Named(value = "openai")
     ChatLanguageModel openai;
     @Inject
+    @Named(value = "github")
+    ChatLanguageModel github;
+    @Inject
     @Named(value = "groq")
     ChatLanguageModel groq;
     @Inject
@@ -174,7 +177,11 @@ public class ChatBotWebSocketEndpoint {
                             if (llmName.equals("mistral")) {
                                 activeModel = mistral;
                             } else {
-                                throw new RuntimeException("Unknown llm model name " + llmName);
+                                if (llmName.equals("github")) {
+                                    activeModel = github;
+                                } else {
+                                    throw new RuntimeException("Unknown llm model name " + llmName);
+                                }
                             }
                         }
                     }

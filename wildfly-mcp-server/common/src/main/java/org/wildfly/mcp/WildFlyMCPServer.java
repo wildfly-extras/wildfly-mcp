@@ -26,7 +26,6 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.core.Response;
-import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.RuntimeMXBean;
@@ -113,8 +112,10 @@ public class WildFlyMCPServer {
             result.remove("core-service");
             result.remove("path");
             result.remove("system-properties");
-            result.get("subsystem").remove("elytron");
+            result.get("subsystem").remove("elytron");            
             cleanupUndefined(result);
+            // add back but empty.
+            result.get("subsystem").get("elytron");
             return buildResponse(result.toJSONString(false));
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the server configuration");
@@ -261,20 +262,20 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get the JVM (Java VM) information (version, input arguments, startime, uptime, consumed memory, consumed cpu) as JSON format. The Java VM is the one used to execute the WildFly server running on the provided host and port arguments.")
+    @Tool(description = "Get the WildFly Server and JVM (Java VM) information (server version, java version, input arguments, startime, uptime, consumed memory, consumed cpu) as JSON format. The Java VM is the one used to execute the WildFly server running on the provided host and port arguments.")
     @RolesAllowed("admin")
-    ToolResponse getJVMInfo(
+    ToolResponse getServerInfo(
             @ToolArg(name = "host", description = "Optional WildFly server host name. By default localhost is used.", required = false) String host,
             @ToolArg(name = "port", description = "Optional WildFly server port. By default 9990 is used.", required = false) String port) {
         Server server = new Server(host, port);
         User user = new User();
         try {
+            VMInfo info = new VMInfo();
             try (JMXSession session = new JMXSession(server, user)) {
                 RuntimeMXBean proxy
                         = ManagementFactory.newPlatformMXBeanProxy(session.connection,
                                 ManagementFactory.RUNTIME_MXBEAN_NAME,
                                 RuntimeMXBean.class);
-                VMInfo info = new VMInfo();
                 info.name = proxy.getName();
                 info.inputArguments = proxy.getInputArguments();
                 info.specName = proxy.getSpecName();
@@ -301,8 +302,20 @@ public class WildFlyMCPServer {
                 double used = proxy3.getHeapMemoryUsage().getUsed();
                 double result = (used * 100) / max;
                 info.consumedMemory = "" + (int) result + "%";
-                return buildResponse(toJson(info));
             }
+            ServerInfo serverInfo = new ServerInfo();
+            serverInfo.vmInfo = info;
+            CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
+            ModelNode mn = ctx.buildRequest(":read-resource(recursive=false)");
+            String value = wildflyClient.call(server, user, mn.toJSONString(false), false);
+            ModelNode node = ModelNode.fromJSONString(value);
+            ModelNode result = node.get("result");
+            serverInfo.nodeName = result.get("name").asString();
+            serverInfo.productName = result.get("product-name").asString();
+            serverInfo.productVersion = result.get("product-version").asString();
+            serverInfo.coreVersion = result.get("release-version").asString();
+            return buildResponse(toJson(serverInfo));
+
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the consumed memory");
         }

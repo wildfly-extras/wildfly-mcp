@@ -60,7 +60,7 @@ MISTRAL_API_KEY=<Your mistral key> java -jar target/wildfly-chat-bot-bootable.ja
 | Env Variable    | System property |  Description |
 | -------- | ------- | ------- |
 | WILDFLY_CHATBOT_MCP_CONFIG_FILE | wildfly.chatbot.mcp.config.file |Absolute path to the mcp.json file    |
-| WILDFLY_CHATBOT_LLM_NAME  | wildfly.chatbot.llm.name |The active LLM model (`ollama`, `groq` or `mistral`)    |
+| WILDFLY_CHATBOT_LLM_NAME  | wildfly.chatbot.llm.name |The active LLM model (`ollama`, `groq`, `mistral` or `github`)    |
 | WILDFLY_CHATBOT_SYSTEM_PROMPT |wildfly.chatbot.system.prompt |You can extend the system prompt with some content |
 | WILDFLY_CHATBOT_WELCOME_MESSAGE | wildfly.chatbot.welcome.message |You can replace the welcome message with another message |
 | WILDFLY_MCP_SERVER_USER_NAME  | org.wildfly.user.name |The default user name to use when connecting to WildFly server |
@@ -96,3 +96,12 @@ MISTRAL_API_KEY=<Your mistral key> java -jar target/wildfly-chat-bot-bootable.ja
 | MISTRAL_CHAT_MODEL_NAME | model, default value `mistral-small-latest`   |
 | MISTRAL_CHAT_LOG_REQUEST    | log requests, by default `true`    |
 | MISTRAL_CHAT_LOG_RESPONSE    | log responses, by default `true`    |
+
+## Configuring the WildFly chatbot for github
+
+| Env Variable    | Description |
+| -------- | ------- |
+| GITHUB_API_KEY   | Your API key |
+| GITHUB_CHAT_URL  | URL, default value `https://models.inference.ai.azure.com`    |
+| GITHUB_CHAT_MODEL_NAME | model, default value `gpt-4o-mini`   |
+| GITHUB_CHAT_LOG    | log requests and responses, by default `true`    |
