@@ -73,7 +73,7 @@ public class WildFlyMCPServer {
     @RestClient
     WildFlyHealthClient wildflyHealthClient;
 
-    @Tool(description = "Get the list of the enabled logging categories")
+    @Tool()
     @RolesAllowed("admin")
     ToolResponse getWildFlyLoggingCategories(
             @ToolArg(name = "host", required = false) String host,
@@ -92,7 +92,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Gets the server configuration.")
+    @Tool()
     @RolesAllowed("admin")
     ToolResponse getWildFlyServerConfiguration(
             @ToolArg(name = "host", required = false) String host,
@@ -121,9 +121,9 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get all the file paths contained inside an application deployment.")
+    @Tool()
     @RolesAllowed("admin")
-    ToolResponse getDeploymentPaths(
+    ToolResponse getDeploymentFilePaths(
             @ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port,
             @ToolArg(name = "name", required = false) String name) {
@@ -142,7 +142,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get the content of a file located inside a deployment.")
+    @Tool()
     @RolesAllowed("admin")
     ToolResponse getDeploymentFileContent(
             @ToolArg(name = "host", required = false) String host,
@@ -180,7 +180,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Invoke a WildFly CLI operation.")
+    @Tool()
     @RolesAllowed("admin")
     ToolResponse invokeWildFlyCLIOperation(
             @ToolArg(name = "host", required = false) String host,
@@ -199,7 +199,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Enable a logging category.")
+    @Tool()
     @RolesAllowed("admin")
     ToolResponse enableWildFlyLoggingCategory(
             @ToolArg(name = "host", required = false) String host,
@@ -220,7 +220,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Disable a logging category.")
+    @Tool()
     @RolesAllowed("admin")
     ToolResponse disableWildFlyLoggingCategory(
             @ToolArg(name = "host", required = false) String host,
@@ -241,7 +241,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get the log file content.")
+    @Tool()
     @RolesAllowed("admin")
     ToolResponse getWildFlyLogFileContent(
             @ToolArg(name = "host", required = false) String host,
@@ -261,9 +261,9 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get the Server version and JVM configuration.")
+    @Tool()
     @RolesAllowed("admin")
-    ToolResponse getWildFlyServerInfo(
+    ToolResponse getWildFlyServerAndJVMInfo(
             @ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port) {
         Server server = new Server(host, port);
@@ -320,7 +320,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Get the prometheus metrics.")
+    @Tool()
     ToolResponse getWildFlyPrometheusMetrics(
             @ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port) {
@@ -346,8 +346,8 @@ public class WildFlyMCPServer {
         return ow.writeValueAsString(value);
     }
 
-    @Tool(description = "Get the status of the WildFly server and deployments.")
-    ToolResponse getWildFlyHealth(
+    @Tool()
+    ToolResponse getWildFlyServerAndDeploymentsStatus(
             @ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port) {
         Server server = new Server(host, port);
