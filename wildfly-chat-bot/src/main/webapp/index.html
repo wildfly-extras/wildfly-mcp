@@ -126,7 +126,7 @@
                                 return;
                             } else {
                                 if (msg.kind === "prompts") {
-                                    displayToolboxPopup(socket, msg.value, "Available Prompts", "use", "use_prompt", "Retrieving selected prompt");
+                                    displayToolboxPopup(socket, msg.value, "Available Prompts", "Use", "use_prompt", "Retrieving selected prompt");
                                     return;
                                 } else {
                                     if (msg.kind === "emulate_user_question") {
@@ -134,7 +134,7 @@
                                         socket.send(JSON.stringify({kind: "user_question", value: msg.value}));
                                         return;
                                     } else if (msg.kind === "tools") {
-                                        displayToolboxPopup(socket, msg.value, "Available Tools", "call", "call_tool", "Calling selected tool");
+                                        displayToolboxPopup(socket, msg.value, "Available Tools", "Call", "call_tool", "Calling selected tool");
                                         return;
                                     } else if (msg.kind === "login") {
                                         displayAddUserPopup(socket, msg.name);
