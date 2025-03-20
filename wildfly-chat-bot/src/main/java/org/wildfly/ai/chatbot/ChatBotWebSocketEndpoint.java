@@ -18,7 +18,6 @@ import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
-import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.tool.ToolProvider;
@@ -357,6 +356,12 @@ public class ChatBotWebSocketEndpoint {
                     String reply = toolHandler.executeTool(tool);
                     Map<String, String> map = new HashMap<>();
                     map.put("kind", "simple_text");
+                    if (reply.startsWith("{")) {
+                        ObjectMapper mapper = new ObjectMapper();
+                        Object json = mapper.readValue(reply, Object.class);
+                        String indented = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
+                        reply = "```json\n"+indented+"\n```";
+                    }
                     map.put("value", reply);
                     session.getBasicRemote().sendText(toJson(map));
                     return;
@@ -369,9 +374,19 @@ public class ChatBotWebSocketEndpoint {
                     @Override
                     public void run() {
                         try {
-                            String reply = bot.chat(msgObj.get("value").asText());
-                            if (reply == null || reply.isEmpty()) {
-                                reply = "I have not been able to answer your question.";
+                            String reply;
+                            if(msgObj.get("value").asText().startsWith("/") || msgObj.get("value").asText().startsWith(":")) {
+                                try {
+                                    disabledAcceptance = true;
+                                    reply = toolHandler.executeCLITool(msgObj.get("value").asText());
+                                } finally {
+                                    disabledAcceptance = false;
+                                }
+                            } else {
+                                reply = bot.chat(msgObj.get("value").asText());
+                                if (reply == null || reply.isEmpty()) {
+                                    reply = "I have not been able to answer your question.";
+                                }
                             }
                             Map<String, String> map = new HashMap<>();
                             map.put("kind", "simple_text");

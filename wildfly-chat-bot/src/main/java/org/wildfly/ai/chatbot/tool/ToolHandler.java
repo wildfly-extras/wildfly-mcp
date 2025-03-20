@@ -4,6 +4,7 @@
  */
 package org.wildfly.ai.chatbot.tool;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.McpClient;
@@ -26,6 +27,7 @@ public class ToolHandler {
     }
 
     public List<ToolDescription> getTools() throws Exception {
+        toolToClient.clear();
         List<ToolDescription> tools = new ArrayList<>();
         for (McpClient client : clients) {
             List<ToolSpecification> specs = client.listTools();
@@ -67,5 +69,23 @@ public class ToolHandler {
         ToolExecutionRequest req = ToolExecutionRequest.builder().arguments(jsonArguments.toString()).id("1").name(tool.name).build();
 
         return client.executeTool(req);
+    }
+
+    public String executeCLITool(String operation) throws Exception {
+        SelectedTool cliTool = new SelectedTool();
+        cliTool.name = "invokeWildFlyCLIOperation";
+        List<ToolArg> lst = new ArrayList<>();
+        ToolArg op = new ToolArg();
+        op.name = "operation";
+        op.value = operation;
+        lst.add(op);
+        cliTool.arguments = lst;
+        getTools();
+        String reply = executeTool(cliTool);
+        ObjectMapper mapper = new ObjectMapper();
+        Object json = mapper.readValue(reply, Object.class);
+        String indented = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
+        reply = "```json\n" + indented + "\n```";
+        return reply;
     }
 }
