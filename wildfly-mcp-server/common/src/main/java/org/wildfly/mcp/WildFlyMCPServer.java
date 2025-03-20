@@ -45,6 +45,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.wildfly.mcp.WildFlyManagementClient.AddLoggerRequest;
+import org.wildfly.mcp.WildFlyManagementClient.EnableLoggerRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggersRequest;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggersResponse;
 import org.wildfly.mcp.WildFlyManagementClient.GetLoggingFileRequest;
@@ -75,25 +76,6 @@ public class WildFlyMCPServer {
 
     @Tool()
     @RolesAllowed("admin")
-    ToolResponse getWildFlyLoggingCategories(
-            @ToolArg(name = "host", required = false) String host,
-            @ToolArg(name = "port", required = false) String port) {
-        Server server = new Server(host, port);
-        try {
-            User user = new User();
-            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(server, user));
-            Set<String> enabled = new TreeSet<>();
-            for (String e : response.result) {
-                enabled.addAll(getHighLevelCategory(e));
-            }
-            return buildResponse("The list of enabled logging caterories is: " + enabled);
-        } catch (Exception ex) {
-            return handleException(ex, server, "retrieving the logging categories");
-        }
-    }
-
-    @Tool()
-    @RolesAllowed("admin")
     ToolResponse getWildFlyServerConfiguration(
             @ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port) {
@@ -111,10 +93,7 @@ public class WildFlyMCPServer {
             result.remove("core-service");
             result.remove("path");
             result.remove("system-properties");
-            result.get("subsystem").remove("elytron");            
             cleanupUndefined(result);
-            // add back but empty.
-            result.get("subsystem").get("elytron");
             return buildResponse(result.toJSONString(false));
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the server configuration");
@@ -211,9 +190,10 @@ public class WildFlyMCPServer {
             String category = findCategory(loggingCategory);
             GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(server, user));
             if (response.result != null && response.result.contains(category)) {
-                return buildErrorResponse("The logging category " + loggingCategory + " is already enabled. You can get the enabled logging categories from the getLoggingCategories operation.");
+                wildflyClient.call(new EnableLoggerRequest(server, user, category));
+            } else {
+                wildflyClient.call(new AddLoggerRequest(server, user, category));
             }
-            wildflyClient.call(new AddLoggerRequest(server, user, category));
             return buildResponse("The logging category " + loggingCategory + " has been enabled by using the " + category + " logger");
         } catch (Exception ex) {
             return handleException(ex, server, "enabling the logger " + loggingCategory);
@@ -222,7 +202,7 @@ public class WildFlyMCPServer {
 
     @Tool()
     @RolesAllowed("admin")
-    ToolResponse disableWildFlyLoggingCategory(
+    ToolResponse removeWildFlyLoggingCategory(
             @ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port,
             String loggingCategory) {
@@ -363,7 +343,12 @@ public class WildFlyMCPServer {
                     ret.addAll(status.getStatus());
                     return buildResponse(ret.toArray(String[]::new));
                 } else {
-                    throw ex;
+                    if (ex.getResponse().getStatus() == 503) {
+                        String e = ex.getResponse().readEntity(String.class);
+                        return buildResponse(e);
+                    } else {
+                        throw ex;
+                    }
                 }
             }
         } catch (Exception ex) {
@@ -422,8 +407,23 @@ public class WildFlyMCPServer {
                     description = "Optional WildFly server port. By default 9990 is used.",
                     required = false) String port) {
         Server server = new Server(host, port);
-        return PromptMessage.withUserRole(new TextContent("Using available tools, Could you check that the deployed applications in the Wildfly server running on host " + server.host + ", port " + server.port + " are correct? Correct means that there are no error related to the deployment in the server log files. "
+        return PromptMessage.withUserRole(new TextContent("Using available tools, Could you check that the deployed applications in the Wildfly server running on host " + server.host + ", port " + server.port + " are correct? Correct means that there are no error related to the deployment in the server log file. "
                 + "Incorrect means that there are errors and possibly exceptions related to the deployment. If you found an incorrect state, please access the web.xml and jboss-web.xml file and check for faulty content that could explain the error seen in the log file."));
+    }
+    
+    @Prompt(name = "wildFly-server-status", description = "WildFly server, general status.")
+    PromptMessage serverBootErrors(@PromptArg(name = "host",
+            description = "Optional WildFly server host name. By default localhost is used.",
+            required = false) String host,
+            @PromptArg(name = "port",
+                    description = "Optional WildFly server port. By default 9990 is used.",
+                    required = false) String port) {
+        Server server = new Server(host, port);
+        return PromptMessage.withUserRole(new TextContent("Using available tools, "
+                + "could you check that the Wildfly server is correctly running on host " + server.host + ", port " + server.port + 
+                "? Correct means that the server and deployments status is ok, that the trace WFLYSRV0025 is found in the server log file, "
+                + "and no error found in the log file. In case of error, analyze the problem and provide suggestions to resolve the problems. " +
+                "In addition your reply must contain the WildFly and JVM versions."));
     }
 
     @RegisterRestClient(baseUri = "http://foo:9990/metrics/")

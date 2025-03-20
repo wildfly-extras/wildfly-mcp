@@ -103,6 +103,19 @@ public class WildFlyManagementClient {
         }
     }
     
+    public static class EnableLoggerRequest extends ManagementRequest<ManagementResponse> {
+        
+        public String value = "ALL";
+        public String name = "level";
+        EnableLoggerRequest(Server server, User user, String category) {
+            super(ManagementResponse.class, "write-attribute", server, user);
+            address.add("subsystem");
+            address.add("logging");
+            address.add("logger");
+            address.add(category);
+        }
+    }
+    
     public abstract static class ReadAttributeRequest<R extends ReadAttributeResponse> extends ManagementRequest<R> {
         
         public String name;
