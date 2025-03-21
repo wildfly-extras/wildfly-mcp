@@ -201,13 +201,6 @@ Get the log file content of the WildFly server running on the provided host and 
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 - `numberOfLines`: The optional number of log file lines to retrieve. By default the last 200 lines are retrieved. Use `-1` to get all lines.
 
-### getWildFlyLoggingCategories
-Get the list of the enabled logging categories for the WildFly server running on the provided host and port arguments.
-
-**Inputs**:
-- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
-- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
-
 ### enableWildFlyLoggingCategory
 Enable a logging category for the WildFly server running on the provided host and port arguments.
 
@@ -277,6 +270,9 @@ WildFly and JVM resource consumption status. Analyze the consumed resources.
 
 ### wildFly-deployment-errors
 WildFly deployed applications, identify potential for errors.
+
+### wildfly-server-status
+WildFly server, running status.
 
 ## Example of questions to ask to the WildFly server
 

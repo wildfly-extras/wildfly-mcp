@@ -356,7 +356,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Prompt(name = "wildFly-prometheus-metrics-chart", description = "WildFly, prometheus metrics chart")
+    @Prompt(name = "wildfly-prometheus-metrics-chart", description = "WildFly, prometheus metrics chart")
     PromptMessage prometheusMetricsChart(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
             required = false) String host,
@@ -371,7 +371,7 @@ public class WildFlyMCPServer {
                 + "Be sure to use at least 5 different data column and be sure to represent all data as bar in the chart"));
     }
 
-    @Prompt(name = "wildFly-security-audit", description = "WildFly, security audit. Analyze the server log file for potential attacks")
+    @Prompt(name = "wildfly-security-audit", description = "WildFly, security audit. Analyze the server log file for potential attacks")
     PromptMessage securityAudit(@PromptArg(name = "loggingCategories",
             description = "Comma separated list of logging categories to enable. By default the security category is enabled.",
             required = false) String arg,
@@ -387,7 +387,7 @@ public class WildFlyMCPServer {
                 + ". Then wait 10 seconds. Finally get the server log file, analyze it and report issues related to authentication failures."));
     }
 
-    @Prompt(name = "wildFly-resources-consumption", description = "WildFly and JVM resource consumption status. Analyze the consumed resources.")
+    @Prompt(name = "wildfly-resources-consumption", description = "WildFly and JVM resource consumption status. Analyze the consumed resources.")
     PromptMessage consumedResources(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
             required = false) String host,
@@ -395,11 +395,11 @@ public class WildFlyMCPServer {
                     description = "Optional WildFly server port. By default 9990 is used.",
                     required = false) String port) {
         Server server = new Server(host, port);
-        return PromptMessage.withUserRole(new TextContent("Using available tools, Could you check the consumed resources of the JVM and the Wildfly server running on host " + server.host + ", port " + server.port + ": consumed memory, max memory and cpu utilization, prometheus metrics. Mainly anything that could impact running my application. In addition could you verify that the JVM input arguments are well suited to run my server? "
-                + "Your reply should be short with a strong focus on what is wrong, how the JVM arguments are set and the recommendations."));
+        return PromptMessage.withUserRole(new TextContent("Check the consumed resources of the JVM and the Wildfly server running on host " + server.host + ", port " + server.port + ": consumed memory, max memory and cpu utilization, prometheus metrics. "
+                + "Your reply should be short with a strong focus on what is wrong and your recommendations."));
     }
     
-    @Prompt(name = "wildFly-deployment-errors", description = "WildFly deployed applications, identify potential for errors.")
+    @Prompt(name = "wildfly-deployment-errors", description = "WildFly deployed applications, identify potential for errors.")
     PromptMessage deploymentError(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
             required = false) String host,
@@ -407,11 +407,12 @@ public class WildFlyMCPServer {
                     description = "Optional WildFly server port. By default 9990 is used.",
                     required = false) String port) {
         Server server = new Server(host, port);
-        return PromptMessage.withUserRole(new TextContent("Using available tools, Could you check that the deployed applications in the Wildfly server running on host " + server.host + ", port " + server.port + " are correct? Correct means that there are no error related to the deployment in the server log file. "
-                + "Incorrect means that there are errors and possibly exceptions related to the deployment. If you found an incorrect state, please access the web.xml and jboss-web.xml file and check for faulty content that could explain the error seen in the log file."));
+        return PromptMessage.withUserRole(new TextContent("Check that the status of the deployed applications in the Wildfly server running on host " + host + ", port " + port + " are OK. "
+                + "Retrieve the last 100 lines of the server log, then check that no errors related to the deployment are found in the traces older than the last time the server was starting."
+                + "If you find an incorrect state, and if the files exist, access the web.xml and jboss-web.xml files and check for faulty content that could explain the error seen in the log file."));
     }
     
-    @Prompt(name = "wildFly-server-status", description = "WildFly server, general status.")
+    @Prompt(name = "wildfly-server-status", description = "WildFly server, running status.")
     PromptMessage serverBootErrors(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
             required = false) String host,
@@ -419,11 +420,8 @@ public class WildFlyMCPServer {
                     description = "Optional WildFly server port. By default 9990 is used.",
                     required = false) String port) {
         Server server = new Server(host, port);
-        return PromptMessage.withUserRole(new TextContent("Using available tools, "
-                + "could you check that the Wildfly server is correctly running on host " + server.host + ", port " + server.port + 
-                "? Correct means that the server and deployments status is ok, that the trace WFLYSRV0025 is found in the server log file, "
-                + "and no error found in the log file. In case of error, analyze the problem and provide suggestions to resolve the problems. " +
-                "In addition your reply must contain the WildFly and JVM versions."));
+        return PromptMessage.withUserRole(new TextContent("Check that the server and deployments running on host " + server.host + ", port " + server.port
+                + " status is ok. Then retrieve the last 100 lines of the server log, then check that the trace WFLYSRV0025 is found in the server log traces of the last time the server started. In addition your reply must contain the WildFly and JVM versions."));
     }
 
     @RegisterRestClient(baseUri = "http://foo:9990/metrics/")
