@@ -33,7 +33,9 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -86,6 +88,7 @@ public class ChatBotWebSocketEndpoint {
     private PromptHandler promptHandler;
     private ToolHandler toolHandler;
     private Bot bot;
+    private ReportGenerator reportGenerator;
     private List<McpClient> clients = new ArrayList<>();
     private final List<McpTransport> transports = new ArrayList<>();
     private Session session;
@@ -97,6 +100,11 @@ public class ChatBotWebSocketEndpoint {
     private ChatLanguageModel activeModel;
     private String initExceptionMessage;
     private String initExceptionContext;
+    private final Recorder recorder = new Recorder();
+
+    public Recorder getRecorder() {
+        return recorder;
+    }
 
     @PostConstruct
     public void init() {
@@ -244,6 +252,12 @@ public class ChatBotWebSocketEndpoint {
                         return promptHandler.getSystemPrompt() + (systemPrompt.isPresent() ? systemPrompt.get() : "");
                     })
                     .build();
+            reportGenerator = AiServices.builder(ReportGenerator.class)
+                    .chatLanguageModel(activeModel)
+                    .systemMessageProvider(chatMemoryId -> {
+                        return promptHandler.getGeneratorSystemPrompt();
+                    })
+                    .build();
             Map<String, String> args = new HashMap<>();
             args.put("kind", "simple_text");
             args.put("value", welcomeMessage);
@@ -258,8 +272,16 @@ public class ChatBotWebSocketEndpoint {
     }
 
     public static String toJson(Object msg) throws JsonProcessingException {
+        return toJson(msg, false);
+    }
+
+    public static String toJson(Object msg, boolean formated) throws JsonProcessingException {
         ObjectWriter ow = new ObjectMapper().writer();
-        return ow.writeValueAsString(msg);
+        if(formated) {
+            return ow.withDefaultPrettyPrinter().writeValueAsString(msg);
+        } else {
+            return ow.writeValueAsString(msg);
+        }
     }
 
     void traceToolCalled(String tool, String args, String reply) {
@@ -375,6 +397,7 @@ public class ChatBotWebSocketEndpoint {
                     public void run() {
                         try {
                             String reply;
+                            recorder.newInteraction(msgObj.get("value").asText());
                             if(msgObj.get("value").asText().startsWith("/") || msgObj.get("value").asText().startsWith(":")) {
                                 try {
                                     disabledAcceptance = true;
@@ -388,6 +411,7 @@ public class ChatBotWebSocketEndpoint {
                                     reply = "I have not been able to answer your question.";
                                 }
                             }
+                            recorder.interactionDone(reply);
                             Map<String, String> map = new HashMap<>();
                             map.put("kind", "simple_text");
                             map.put("value", reply);
@@ -431,6 +455,29 @@ public class ChatBotWebSocketEndpoint {
                     session.getBasicRemote().sendText(toJson(map));
                 }
                 login();
+                return;
+            }
+            if ("generate_report".equals(kind)) {
+                if (recorder.isEmpty()) {
+                    Map<String, String> map = new HashMap<>();
+                    map.put("kind", "simple_text");
+                    map.put("value", "Hey! You must first interact with your WildFly server to be able to generate a report.");
+                    session.getBasicRemote().sendText(toJson(map));
+                } else {
+                    String smallRecord = toJson(recorder.getSmallRecord(), true);
+                    String largeRecord = toJson(recorder.getCompleteRecord(), true);
+                    String reply = reportGenerator.generate(smallRecord);
+                    Path file = Paths.get("report_messages.json");
+                    Path summaryFile = Paths.get("report_summary.md");
+                    Files.write(file, largeRecord.getBytes());
+                    Files.write(summaryFile, reply.getBytes());
+                    reply = "A JSON document containing the complete interaction has been generated in the file `"
+                            + file + "`. Here is a summary that has been generated in the file `" + summaryFile + "`.\n" + reply;
+                    Map<String, String> map = new HashMap<>();
+                    map.put("kind", "simple_text");
+                    map.put("value", reply);
+                    session.getBasicRemote().sendText(toJson(map));
+                }
                 return;
             }
             throw new Exception("Unknown message " + kind);

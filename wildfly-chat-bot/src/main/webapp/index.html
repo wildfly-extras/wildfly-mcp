@@ -90,9 +90,27 @@
                         }
                     }
                 });
+                const button4 = document.createElement('button')
+                button4.innerHTML = 'generate report';
+                button4.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const objDiv = document.getElementById("chat-body");
+                    const cb = objDiv.querySelectorAll('chat-bubble[loading]')
+                    if (cb.length === 0) {
+                        if (event.target !== null) {
+                            const objDiv = document.getElementById("chat-body");
+                            let bubbleElement = document.createElement('chat-bubble');
+                            bubbleElement.setAttribute("loading", "true");
+                            objDiv.appendChild(bubbleElement);
+                            configureBubble(bubbleElement);
+                            scrollIt();
+                            socket.send(JSON.stringify({kind: "generate_report"}));
+                        }
+                    }
+                });
                 const inputDiv2 = document.createElement('div')
                 inputDiv2.classList.add('chatbot-toolbox');
-                inputDiv2.append(button2, button3)
+                inputDiv2.append(button2, button3, button4)
                 chatFooter.appendChild(form);
 
                 chatContainer.append(chatBody, chatFooter, inputDiv2);

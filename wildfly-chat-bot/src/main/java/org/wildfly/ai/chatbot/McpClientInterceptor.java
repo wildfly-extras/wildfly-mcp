@@ -45,6 +45,7 @@ public class McpClientInterceptor implements McpClient {
             acceptedTools.put(ter.name() + ter.arguments(), true);
             String ret = delegate.executeTool(ter);
             endpoint.traceToolCalled(ter.name(), ter.arguments(), ret);
+            endpoint.getRecorder().toolCalled(ter, ret);
             return ret;
         } else {
             String id = ter.id() == null ? "1" : ter.id();

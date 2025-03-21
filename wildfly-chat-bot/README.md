@@ -13,6 +13,7 @@ A WildFly Chat Bot. This WildFly Bootable jar application is a web based UI allo
 * Ability to select and use mcp prompts.
 * Acceptance workflow of LLM called tools. You can reject a tool invocation done by the LLM.
 * Configurable system prompt and welcome message.
+* Report generation inmarkdown and json format to archive the interaction with the chatbot.
 
 ## Using the WildFly chatbot container image
 
