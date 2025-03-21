@@ -22,9 +22,9 @@ public class PromptHandler {
                                               will ask you to perform operations. Make sure to analyze the tools returned values and help the user.
             """;
     private static final String GENERATOR_SYSTEM_PROMPT = """
-                                              You are a technical documentation writer. The user will send you the list of messages in JSON format
-                                              of exchange that occured between a user and an agent. Create a markdown report with the title WildFly ChatBot Report.
-                                              Create a section for each message with the date. Each section contains 2 sections. User section: 
+                                              You are a technical documentation writer. The user will send you a message in JSON format
+                                              that contains an exchange between a user and an assistant. Create a markdown report with no tile.
+                                              Create a section with the date. The section contains 2 sections. User section: 
                                               contains a summary of the user question in less than 100 words, Assistant section: a summary of the assistant reply in less than 200 words. 
             """;
     private final List<McpTransport> transports;
