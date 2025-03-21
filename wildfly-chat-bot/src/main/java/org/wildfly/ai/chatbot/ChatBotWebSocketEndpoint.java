@@ -50,6 +50,7 @@ import java.util.logging.Level;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerSSEConfig;
 import org.wildfly.ai.chatbot.MCPConfig.MCPServerStdioConfig;
+import org.wildfly.ai.chatbot.Recorder.UserQuestion;
 import org.wildfly.ai.chatbot.http.HttpMcpTransport;
 
 @ServerEndpoint(value = "/chatbot")
@@ -464,9 +465,15 @@ public class ChatBotWebSocketEndpoint {
                     map.put("value", "Hey! You must first interact with your WildFly server to be able to generate a report.");
                     session.getBasicRemote().sendText(toJson(map));
                 } else {
-                    String smallRecord = toJson(recorder.getSmallRecord(), true);
+                    StringBuilder buffer = new StringBuilder();
+                    buffer.append("# WildFly ChatBot Report\n");
+                    for(UserQuestion q : recorder.getSmallRecord()) {
+                        String smallRecord = toJson(q);
+                        String reply = reportGenerator.generate(smallRecord);
+                        buffer.append(reply + "\n");
+                    }
+                    String reply = buffer.toString();
                     String largeRecord = toJson(recorder.getCompleteRecord(), true);
-                    String reply = reportGenerator.generate(smallRecord);
                     Path file = Paths.get("report_messages.json");
                     Path summaryFile = Paths.get("report_summary.md");
                     Files.write(file, largeRecord.getBytes());
