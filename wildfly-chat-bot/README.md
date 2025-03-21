@@ -17,7 +17,7 @@ A WildFly Chat Bot. This WildFly Bootable jar application is a web based UI allo
 
 ## Using the WildFly chatbot container image
 
-You can start the chatbot thanks to its container image. You can check [this documentation](../container-image/examples/podman/README.md) that uses `podman`.
+You can start the chatbot thanks to its container image. You can check [this documentation](../container-images/examples/podman/README.md) that uses `podman`.
 
 ## Build the chatbot
 
