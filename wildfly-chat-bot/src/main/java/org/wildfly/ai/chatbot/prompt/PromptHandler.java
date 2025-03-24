@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +17,13 @@ import java.util.concurrent.CompletableFuture;
 import org.wildfly.ai.chatbot.prompt.PromptDescription.PromptArg;
 
 public class PromptHandler {
-    
+    class PromptComparator implements Comparator<PromptDescription> {
+
+        @Override
+        public int compare(PromptDescription a, PromptDescription b) {
+            return a.name.compareToIgnoreCase(b.name);
+        }
+    }
     private static final String SYSTEM_PROMPT = """
                                               You are a smart AI agent that can answer any kind of questions. In addition, 
                                               you have tools to interact with running WildFly servers that run by default on localhost and port 9990. The user
@@ -57,6 +65,7 @@ public class PromptHandler {
                 prompts.add(new PromptDescription(p.get("name").asText(), p.get("description").asText(), pargs));
             }
         }
+        Collections.sort(prompts, new PromptComparator());
         return prompts;
     }
 
