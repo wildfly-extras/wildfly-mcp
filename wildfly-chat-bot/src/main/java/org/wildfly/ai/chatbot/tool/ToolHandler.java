@@ -65,7 +65,6 @@ public class ToolHandler {
             }
         }
         jsonArguments.append("}");
-        System.out.println("JSON String " + jsonArguments);
         ToolExecutionRequest req = ToolExecutionRequest.builder().arguments(jsonArguments.toString()).id("1").name(tool.name).build();
 
         return client.executeTool(req);

@@ -226,14 +226,29 @@ public class WildFlyMCPServer {
     ToolResponse getWildFlyLogFileContent(
             @ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port,
-            @ToolArg(name = "numberOfLines", description = "200 by default, use `-1` for all lines.", required = false) String numLines) {
+            @ToolArg(name = "numberOfLines", description = "200 by default, use `-1` for all lines.", required = false) String numLines,
+            @ToolArg(name = "onlyForLastServerStart", description = "True by default.", required = false) Boolean lastStart) {
         Server server = new Server(host, port);
         try {
             User user = new User();
             GetLoggingFileResponse response = wildflyClient.call(new GetLoggingFileRequest(server, numLines, user));
             StringBuilder builder = new StringBuilder();
-            for (String line : response.result) {
-                builder.append(line).append("\n");
+            List<String> lst = new ArrayList<>();
+            lastStart = lastStart == null ? Boolean.TRUE : lastStart;
+            if (lastStart && numLines == null) {
+                for (String line : response.result) {
+                    if(line.contains("WFLYSRV0049")) {
+                        lst = new ArrayList<>();
+                    }
+                    lst.add(line);
+                }
+                for (String line : lst) {
+                    builder.append(line).append("\n");
+                }
+            } else {
+                for (String line : response.result) {
+                    builder.append(line).append("\n");
+                }
             }
             return buildResponse("WildFly server log file Content: `" + builder.toString() + "`");
         } catch (Exception ex) {
@@ -356,7 +371,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Prompt(name = "wildfly-prometheus-metrics-chart", description = "WildFly, prometheus metrics chart")
+    @Prompt(name = "wildfly-server-prometheus-metrics-chart", description = "WildFly, prometheus metrics chart")
     PromptMessage prometheusMetricsChart(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
             required = false) String host,
@@ -371,7 +386,7 @@ public class WildFlyMCPServer {
                 + "Be sure to use at least 5 different data column and be sure to represent all data as bar in the chart"));
     }
 
-    @Prompt(name = "wildfly-security-audit", description = "WildFly, security audit. Analyze the server log file for potential attacks")
+    @Prompt(name = "wildfly-server-security-audit", description = "WildFly, security audit. Analyze the server log file for potential attacks")
     PromptMessage securityAudit(@PromptArg(name = "loggingCategories",
             description = "Comma separated list of logging categories to enable. By default the security category is enabled.",
             required = false) String arg,
@@ -387,7 +402,7 @@ public class WildFlyMCPServer {
                 + ". Then wait 10 seconds. Finally get the server log file, analyze it and report issues related to authentication failures."));
     }
 
-    @Prompt(name = "wildfly-resources-consumption", description = "WildFly and JVM resource consumption status. Analyze the consumed resources.")
+    @Prompt(name = "wildfly-server-resources-consumption", description = "WildFly and JVM resource consumption status. Analyze the consumed resources.")
     PromptMessage consumedResources(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
             required = false) String host,
@@ -399,7 +414,33 @@ public class WildFlyMCPServer {
                 + "Your reply should be short with a strong focus on what is wrong and your recommendations."));
     }
     
-    @Prompt(name = "wildfly-deployment-errors", description = "WildFly deployed applications, identify potential for errors.")
+    @Prompt(name = "wildfly-server-metrics-analyzer", description = "WildFly and JVM metrics. Analyze and summarize the metrics.")
+    PromptMessage analyzeMetrics(@PromptArg(name = "host",
+            description = "Optional WildFly server host name. By default localhost is used.",
+            required = false) String host,
+            @PromptArg(name = "port",
+                    description = "Optional WildFly server port. By default 9990 is used.",
+                    required = false) String port) {
+        Server server = new Server(host, port);
+        return PromptMessage.withUserRole(new TextContent("Retrieve the metrics of the Wildfly server running on host " + server.host + ", port " + server.port + ". "
+                + "Analyze the metrics then provide a summary that should highlights potential reached limits. Make sure to not deep dive into the details and provide a compact summary."));
+    }
+
+    @Prompt(name = "wildfly-server-memory-consumption-over-time", description = "WildFly, memory consumption over time")
+    PromptMessage memOverTimeChart(@PromptArg(name = "host",
+            description = "Optional WildFly server host name. By default localhost is used.",
+            required = false) String host,
+            @PromptArg(name = "port",
+                    description = "Optional WildFly server port. By default 9990 is used.",
+                    required = false) String port) {
+        Server server = new Server(host, port);
+        return PromptMessage.withUserRole(new TextContent("Get the JVM memory consumption from the Wildfly server running on host " + server.host + ", port " + server.port
+                + ". You will repeat the invocation 3 times, being sure to wait 5 seconds between each invocation. "
+                + "After all the 3 invocation have been completed you will organize the data in a table. "
+                + "Then you will use this table to create a graph to visually compare the data. "
+                + "Use the time in X axis, and mem consumption in Y axis"));
+    }
+    @Prompt(name = "wildfly-deployment-errors", description = "WildFly deployed applications, identify potential errors.")
     PromptMessage deploymentError(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
             required = false) String host,
@@ -407,9 +448,33 @@ public class WildFlyMCPServer {
                     description = "Optional WildFly server port. By default 9990 is used.",
                     required = false) String port) {
         Server server = new Server(host, port);
-        return PromptMessage.withUserRole(new TextContent("Check that the status of the deployed applications in the Wildfly server running on host " + host + ", port " + port + " are OK. "
-                + "Retrieve the last 100 lines of the server log, then check that no errors related to the deployment are found in the traces older than the last time the server was starting."
+        return PromptMessage.withUserRole(new TextContent("Check that the status of the deployed applications in the Wildfly server running on host " + server.host + ", port " + server.port + " are OK. "
+                + "Retrieve the lines of the server log of the last time the server started. Then check that no errors related to the deployment are found in the traces older than the last time the server was starting."
                 + "If you find an incorrect state, and if the files exist, access the web.xml and jboss-web.xml files and check for faulty content that could explain the error seen in the log file."));
+    }
+    
+    @Prompt(name = "wildfly-server-log-errors", description = "WildFly server, identify errors.")
+    PromptMessage serverLogErrors(@PromptArg(name = "host",
+            description = "Optional WildFly server host name. By default localhost is used.",
+            required = false) String host,
+            @PromptArg(name = "port",
+                    description = "Optional WildFly server port. By default 9990 is used.",
+                    required = false) String port) {
+        Server server = new Server(host, port);
+        return PromptMessage.withUserRole(new TextContent("Retrieve the server log of the Wildfly server running on host " + server.host + ", port " + server.port + ". "
+                + "If you see lines containing ERROR, analyze the error and report the findings. If you don't see lines with ERROR, reply that the log file doesn't contain any errors."));
+    }
+    
+    @Prompt(name = "wildfly-server-log-analyzer", description = "WildFly server, analyze the log file.")
+    PromptMessage serverAnalyzeLogFile(@PromptArg(name = "host",
+            description = "Optional WildFly server host name. By default localhost is used.",
+            required = false) String host,
+            @PromptArg(name = "port",
+                    description = "Optional WildFly server port. By default 9990 is used.",
+                    required = false) String port) {
+        Server server = new Server(host, port);
+        return PromptMessage.withUserRole(new TextContent("Retrieve the server log of the Wildfly server running on host " + server.host + ", port " + server.port + ". "
+                + "If you see lines containing ERROR or WARN, analyze the error and report the findings. If you don't see lines with ERROR nor WARN, provide a short summary of what the traces contain."));
     }
     
     @Prompt(name = "wildfly-server-status", description = "WildFly server, running status.")

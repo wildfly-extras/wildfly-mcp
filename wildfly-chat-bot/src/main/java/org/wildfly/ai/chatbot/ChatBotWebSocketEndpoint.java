@@ -287,7 +287,6 @@ public class ChatBotWebSocketEndpoint {
 
     void traceToolCalled(String tool, String args, String reply) {
         try {
-            logger.info("Tool called: " + tool + args + " reply :" + reply);
             Map<String, String> map = new HashMap<>();
             map.put("kind", "tool_called");
             map.put("tool", tool);
