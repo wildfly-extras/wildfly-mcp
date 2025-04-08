@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <parent>
+      <groupId>org.jboss</groupId>
+      <artifactId>jboss-parent</artifactId>
+      <version>39</version>
+    </parent>
     <groupId>org.wildfly.mcp</groupId>
     <artifactId>wildfly-mcp-server-parent</artifactId>
     <version>1.0.0.Final-SNAPSHOT</version>
@@ -12,8 +17,13 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
+        
+        <org.apache.httpcomponents.version>4.5.9</org.apache.httpcomponents.version>
+        <org.jboss.remotingjmx.version>3.1.0.Final</org.jboss.remotingjmx.version>
+        <org.wildfly.core.version>27.0.0.Final</org.wildfly.core.version>
         <quarkus.platform.version>3.18.3</quarkus.platform.version>
-        <quarkus.mcp.version>1.0.0.Beta4</quarkus.mcp.version>
+        <quarkus.mcp.version>1.0.0</quarkus.mcp.version>
+        
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.0</surefire-plugin.version>
     </properties>
@@ -35,7 +45,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>4.5.9</version>
+                <version>${org.apache.httpcomponents.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkiverse.mcp</groupId>
@@ -55,12 +65,12 @@
             <dependency>
                 <groupId>org.jboss.remotingjmx</groupId>
                 <artifactId>remoting-jmx</artifactId>
-                <version>3.1.0.Final</version>
+                <version>${org.jboss.remotingjmx.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.wildfly.core</groupId>
                 <artifactId>wildfly-cli</artifactId>
-                <version>27.0.0.Final</version>
+                <version>${org.wildfly.core.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
