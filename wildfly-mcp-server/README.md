@@ -7,70 +7,23 @@ This MCP server is a Java quarkus fat jar application that you can configure in 
 This MCP server (a Tool in AI terminologie) helps you troubleshoot running WildFly servers using natural language.
 You can ask questions such as:
 
-`Hi, could you connect to the WildFly server running on host localhost and port 9990 and get the content of the log file, analyze it and check for errors?`
+`Hi, could you connect to the WildFly server and get the content of the log file, analyze it and check for errors?`
 
-### Installing via Smithery
+## Using jbang
 
-To install WildFly MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@wildfly-extras/wildfly-mcp-server):
+[jbang](http://jbang.dev), is the simplest way to use the WildFly MCP server.
 
-```bash
-npx -y @smithery/cli install @wildfly-extras/wildfly-mcp-server --client claude
-```
+ 1. Install  [jbang](http://jbang.dev).
 
-## Build WildFly MCP quarkus uber jars
-
-Make sure to use JDK21+.
- 
-`mvn clean install`
-
-The STDIO based mcp server jar is `stdio/target/wildfly-mcp-server-stdio-runner.jar`.
-The SSE based mcp server jar is `sse/target/wildfly-mcp-server-sse-runner.jar`.
-
-## Configure the chatbot
-
-Add the following json to the chatbot configuration file:
-
-```
-{
-  "mcpServers": {
-    "wildfly": {
-            "command": "java",
-            "args": ["-jar",
-                    "[path to the repository]/wildfly-mcp-server/stdio/target/wildfly-mcp-server-stdio-runner.jar"]
-    }
-  }
-}
-```
-
-If you are using [jbang](http://jbang.dev), you can add the following json content:
-
+2. Add the WildFly MCP server configuration to your mcp client configuration, for example:
 ```
 {
   "mcpServers": {
     "wildfly": {
             "command": "jbang",
-            "args": ["--quiet",
-                    "org.wildfly:wildfly-mcp-server-stdio:1.0.0.Final-SNAPSHOT:runner"]
-    }
-  }
-}
-```
-
-If you are using the WildFly MCP server container image with podman, you can add the following json content:
-
-NOTE: You must first pull the `quay.io/wildfly-snapshots/wildfly-mcp-server:latest` image.
-
-```
-{
-  "mcpServers": {
-    "wildfly": {
-            "command": "podman",
-            "args": [
-                     "run",
-                     "--rm",
-                     "-i",
-                     "--network=host",
-                     "quay.io/wildfly-snapshots/wildfly-mcp-server:latest"]
+            "args": ["-Dorg.wildfly.user.name=chatbot-user",
+                     "-Dorg.wildfly.user.password=chatbot-user",
+                     "org.wildfly.mcp:wildfly-mcp-server-stdio:1.0.0.Alpha3:runner"]
     }
   }
 }
@@ -80,29 +33,15 @@ NOTE: You must first pull the `quay.io/wildfly-snapshots/wildfly-mcp-server:late
 
 * For [MCPHost](https://github.com/mark3labs/mcphost), add to a file named `mcp.json` and call: `./mcphost_Linux_x86_64/mcphost --config [path to the file]/mcp.json --model ollama:llama3.1:8b`
 
-## Configuring the WildFly MCP SSE server
+NOTE: Make sure to have added a user that will be used by the MCP server to authenticate against the WildFly server. For example: `$JBOSS_HOME/bin/add-user.sh -u chatbot-user -p chatbot-user`
 
-The access to the [WildFly MCP SSE server](sse) is secured with OIDC (OAuth2 'Resource Owner Password Credentials Grant').
+## Installing via Smithery
 
-In the following configuration (from the [WildFly chat bot](../wildfly-chat-bot/README.md)), a keycloak realm named `wildfly-mcp-server` that contains a client named `token-service` is used to authenticate users.
-The WildFly chatbot will prompt you for username and password that will then be used to retrieve Tokens from the keycloak server allowing to access 
-to the SSE MCP server.
+To install WildFly MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@wildfly-extras/wildfly-mcp-server):
 
+```bash
+npx -y @smithery/cli install @wildfly-extras/wildfly-mcp-server --client claude
 ```
-{
-  "mcpSSEServers": {
-    "wildfly": {
-            "url": "http://localhost:8081/mcp/sse"
-            "providerUrl": "http://localhost:8180/realms/wildfly-mcp-server",
-            "clientId": "token-service"
-    }
-  }
-}
-``` 
-
-WARNING: This configuration is subject to change once the 
-[Authorization specification draft](https://spec.modelcontextprotocol.io/specification/draft/basic/authorization/) 
-is integrated in the [MCP protocol specification](https://spec.modelcontextprotocol.io/specification/2024-11-05/).
 
 ## Admin user credentials
 
@@ -166,7 +105,31 @@ accessing to the server with the `chatbot-user` (actually any user with the `Mon
 If no host is provided, `localhost` is used. If no port is provided, `9990` is used.
 You can configure default host and port using the system properties `-Dorg.wildfly.host.name=<host name>` and `-Dorg.wildfly.port=<port>`
 
-## SSE security token configuration
+## Configuring the WildFly MCP SSE server
+
+The access to the [WildFly MCP SSE server](sse) is secured with OIDC (OAuth2 'Resource Owner Password Credentials Grant').
+
+In the following configuration (from the [WildFly chat bot](../wildfly-chat-bot/README.md)), a keycloak realm named `wildfly-mcp-server` that contains a client named `token-service` is used to authenticate users.
+The WildFly chatbot will prompt you for username and password that will then be used to retrieve Tokens from the keycloak server allowing to access 
+to the SSE MCP server.
+
+```
+{
+  "mcpSSEServers": {
+    "wildfly": {
+            "url": "http://localhost:8081/mcp/sse"
+            "providerUrl": "http://localhost:8180/realms/wildfly-mcp-server",
+            "clientId": "token-service"
+    }
+  }
+}
+``` 
+
+WARNING: This configuration is subject to change once the 
+[Authorization specification draft](https://spec.modelcontextprotocol.io/specification/draft/basic/authorization/) 
+is integrated in the [MCP protocol specification](https://spec.modelcontextprotocol.io/specification/2024-11-05/).
+
+### SSE security token configuration
 
 The Keycloak server URL, client and optional secret can be configured using the following system properties:
 
@@ -297,3 +260,12 @@ Make sure to first start you WildFly sever.
 * Hi, could you connect to the WildFly server and check the available memory and cpu usage?
 * Hi, could you connect to the WildFly server and check if it has enough available memory to run?
 * Hi, could you connect to the WildFly server and check if the cpu usage is not too high?
+
+## Build WildFly MCP quarkus uber jars
+
+Make sure to use JDK21+.
+ 
+`mvn clean install`
+
+The STDIO based mcp server jar is `stdio/target/wildfly-mcp-server-stdio-runner.jar`.
+The SSE based mcp server jar is `sse/target/wildfly-mcp-server-sse-runner.jar`.
