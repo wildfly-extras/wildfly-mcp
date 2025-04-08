@@ -446,11 +446,19 @@ public class WildFlyMCPServer {
             required = false) String host,
             @PromptArg(name = "port",
                     description = "Optional WildFly server port. By default 9990 is used.",
-                    required = false) String port) {
+                    required = false) String port,
+            @PromptArg(name = "deploymentName",
+                    description = "The deployment name.",
+                    required = false) String deploymentName) {
         Server server = new Server(host, port);
-        return PromptMessage.withUserRole(new TextContent("Check that the status of the deployed applications in the Wildfly server running on host " + server.host + ", port " + server.port + " are OK. "
-                + "Retrieve the lines of the server log of the last time the server started. Then check that no errors related to the deployment are found in the traces older than the last time the server was starting."
-                + "If you find an incorrect state, and if the files exist, access the web.xml and jboss-web.xml files and check for faulty content that could explain the error seen in the log file."));
+        if (deploymentName == null) {
+            deploymentName = "deployments";
+        } else {
+            deploymentName = "the deployed application " + deploymentName;
+        }
+        return PromptMessage.withUserRole(new TextContent("Check that the status of " + deploymentName + " in the Wildfly server running on host " + server.host + ", port " + server.port + " is OK. "
+                + "Retrieve the lines of the server log of the last time the server started. Then check that no errors are found in the traces older than the last time the server was starting."
+                + "If you find errors, and if the files exist, access the web.xml and jboss-web.xml files of the " + deploymentName + " and check for faulty content that could explain the error seen in the log file."));
     }
     
     @Prompt(name = "wildfly-server-log-errors", description = "WildFly server, identify errors.")
