@@ -373,9 +373,11 @@ public class ChatBotWebSocketEndpoint {
             if ("call_tool".equals(kind)) {
                 JsonNode toolNode = msgObj.get("value");
                 SelectedTool tool = objectMapper.treeToValue(toolNode, SelectedTool.class);
+                String reply = null;
                 try {
                     disabledAcceptance = true;
-                    String reply = toolHandler.executeTool(tool);
+                    recorder.newInteraction("User explicit call to " + tool.name + ", arguments:" + tool.arguments);
+                    reply = toolHandler.executeTool(tool);
                     Map<String, String> map = new HashMap<>();
                     map.put("kind", "simple_text");
                     if (reply.startsWith("{")) {
@@ -388,6 +390,7 @@ public class ChatBotWebSocketEndpoint {
                     session.getBasicRemote().sendText(toJson(map));
                     return;
                 } finally {
+                    recorder.interactionDone(reply == null ? "An error occured invoking the tool" : reply);
                     disabledAcceptance = false;
                 }
             }
