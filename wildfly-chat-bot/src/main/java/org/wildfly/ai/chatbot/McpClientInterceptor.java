@@ -8,9 +8,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.McpClient;
-import dev.langchain4j.mcp.client.ResourceRef;
-import dev.langchain4j.mcp.client.ResourceResponse;
-import dev.langchain4j.mcp.client.ResourceTemplateRef;
+import dev.langchain4j.mcp.client.McpGetPromptResult;
+import dev.langchain4j.mcp.client.McpPrompt;
+import dev.langchain4j.mcp.client.McpResource;
+import dev.langchain4j.mcp.client.McpReadResourceResult;
+import dev.langchain4j.mcp.client.McpResourceTemplate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,18 +69,33 @@ public class McpClientInterceptor implements McpClient {
     }
 
     @Override
-    public List<ResourceRef> listResources() {
+    public List<McpResource> listResources() {
         return delegate.listResources();
     }
 
     @Override
-    public List<ResourceTemplateRef> listResourceTemplates() {
+    public List<McpResourceTemplate> listResourceTemplates() {
         return delegate.listResourceTemplates();
     }
 
     @Override
-    public ResourceResponse readResource(String string) {
+    public McpReadResourceResult readResource(String string) {
         return delegate.readResource(string);
+    }
+
+    @Override
+    public List<McpPrompt> listPrompts() {
+        return delegate.listPrompts();
+    }
+
+    @Override
+    public McpGetPromptResult getPrompt(String string, Map<String, Object> map) {
+        return delegate.getPrompt(string, map);
+    }
+
+    @Override
+    public void checkHealth() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 }

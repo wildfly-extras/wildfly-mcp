@@ -103,6 +103,11 @@ public class HttpMcpTransport implements McpTransport {
         }
     }
 
+    @Override
+    public void checkHealth() {
+        // no transport-specific checks right now
+    }
+
     private CompletableFuture<JsonNode> execute(Request request, Long id) {
         CompletableFuture<JsonNode> future = new CompletableFuture<>();
         if (id != null) {
@@ -163,11 +168,11 @@ public class HttpMcpTransport implements McpTransport {
         if (tokenProvider != null) {
             String token = tokenProvider.getToken();
             return new Request.Builder()
-                    .url(postUrl)
-                    .header("Content-Type", "application/json")
+                .url(postUrl)
+                .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + token)
-                    .post(RequestBody.create(OBJECT_MAPPER.writeValueAsBytes(message)))
-                    .build();
+                .post(RequestBody.create(OBJECT_MAPPER.writeValueAsBytes(message)))
+                .build();
         } else {
             return new Request.Builder()
                     .url(postUrl)
