@@ -4,6 +4,7 @@
  */
 package org.wildfly.mcp;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,9 +19,10 @@ public class VMInfo {
     public String vmName;
     public String vmVendor;
     public String vmVersion;
-    public List<String> inputArguments;
+    public List<String> inputArguments = new ArrayList<>();
     public String startTime;
     public String upTime;
     public String consumedMemory;
     public String consumedCPU;
+    public String systemLoadAverage;
 }

@@ -7,7 +7,6 @@ package org.wildfly.mcp;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.sun.management.OperatingSystemMXBean;
 
 import io.quarkiverse.mcp.server.Prompt;
 import io.quarkiverse.mcp.server.PromptArg;
@@ -26,9 +25,6 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.core.Response;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.RuntimeMXBean;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -41,16 +37,18 @@ import org.apache.http.auth.AuthenticationException;
 import org.apache.http.conn.HttpHostConnectException;
 import org.jboss.as.cli.CommandContext;
 import org.jboss.as.cli.CommandContextFactory;
+import org.jboss.as.controller.client.OperationResponse;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
-import org.wildfly.mcp.WildFlyManagementClient.AddLoggerRequest;
-import org.wildfly.mcp.WildFlyManagementClient.EnableLoggerRequest;
-import org.wildfly.mcp.WildFlyManagementClient.GetLoggersRequest;
-import org.wildfly.mcp.WildFlyManagementClient.GetLoggersResponse;
-import org.wildfly.mcp.WildFlyManagementClient.GetLoggingFileRequest;
-import org.wildfly.mcp.WildFlyManagementClient.GetLoggingFileResponse;
-import org.wildfly.mcp.WildFlyManagementClient.RemoveLoggerRequest;
+import org.wildfly.mcp.WildFlyControllerClient.AddLoggerRequest;
+import org.wildfly.mcp.WildFlyControllerClient.EnableLoggerRequest;
+import org.wildfly.mcp.WildFlyControllerClient.GetLoggersRequest;
+import org.wildfly.mcp.WildFlyControllerClient.GetLoggingFileRequest;
+import org.wildfly.mcp.WildFlyControllerClient.GetMemoryMXBean;
+import org.wildfly.mcp.WildFlyControllerClient.GetOperatingSystemMXBean;
+import org.wildfly.mcp.WildFlyControllerClient.GetRuntimeMXBean;
+import org.wildfly.mcp.WildFlyControllerClient.RemoveLoggerRequest;
 
 public class WildFlyMCPServer {
 
@@ -68,7 +66,7 @@ public class WildFlyMCPServer {
 
     }
 
-    WildFlyManagementClient wildflyClient = new WildFlyManagementClient();
+    WildFlyControllerClient wildflyClient = new WildFlyControllerClient();
     @RestClient
     WildFlyMetricsClient wildflyMetricsClient;
     @RestClient
@@ -85,8 +83,7 @@ public class WildFlyMCPServer {
             CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
             // This call, if done with the Monitor role, will be filtered. No sensitive information present.
             ModelNode mn = ctx.buildRequest(":read-resource(recursive=true)");
-            String value = wildflyClient.call(server, user, mn.toJSONString(false), false);
-            ModelNode node = ModelNode.fromJSONString(value);
+            ModelNode node = wildflyClient.call(server, user, mn);
             ModelNode result = node.get("result");
             // enforce some cleanup
             result.remove("extension");
@@ -97,6 +94,27 @@ public class WildFlyMCPServer {
             return buildResponse(result.toJSONString(false));
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the server configuration");
+        }
+    }
+
+    @Tool(description = "Retrieve the JSON of the metamodel for the provided resource path.")
+    @RolesAllowed("admin")
+    ToolResponse getWildFlyMetaModel(
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port,
+            @ToolArg(name = "resource-path", required = true) String resourcePath) {
+        Server server = new Server(host, port);
+        try {
+            User user = new User();
+            CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
+            // This call, if done with the Monitor role, will be filtered. No sensitive information present.
+            ModelNode mn = ctx.buildRequest(resourcePath + ":read-resource-description(recursive=false)");
+            ModelNode node = wildflyClient.call(server, user, mn);
+            ModelNode result = node.get("result");
+            cleanupUndefined(result);
+            return buildResponse(result.toJSONString(false));
+        } catch (Exception ex) {
+            return handleException(ex, server, "retrieving the server meta model");
         }
     }
 
@@ -112,8 +130,7 @@ public class WildFlyMCPServer {
             CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
             name = (name == null || name.isEmpty()) ? "ROOT.war" : name;
             ModelNode mn = ctx.buildRequest("/deployment=" + name + ":browse-content");
-            String value = wildflyClient.call(server, user, mn.toJSONString(false), false);
-            ModelNode node = ModelNode.fromJSONString(value);
+            ModelNode node = wildflyClient.call(server, user, mn);
             ModelNode result = node.get("result");
             return buildResponse(result.toJSONString(false));
         } catch (Exception ex) {
@@ -135,8 +152,9 @@ public class WildFlyMCPServer {
             CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
             // This call, if done with the Monitor role, will be filtered. No sensitive information present.
             ModelNode mn = ctx.buildRequest("/deployment=" + name + ":read-content(path=" + path + ")");
-            String value = wildflyClient.call(server, user, mn.toJSONString(false), true);
-            return buildResponse(value);
+            OperationResponse value = wildflyClient.callOperation(server, user, mn);
+            String content = WildFlyControllerClient.getAttachment(value);
+            return buildResponse(content);
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the logging categories");
         }
@@ -171,7 +189,7 @@ public class WildFlyMCPServer {
             CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
             ModelNode mn = ctx.buildRequest(operation);
             // TODO, implement possible rules if needed to disallow some operations.
-            String value = wildflyClient.call(server, user, mn.toJSONString(false), false);
+            String value = wildflyClient.call(server, user, mn).toJSONString(false);
             return buildResponse(value);
         } catch (Exception ex) {
             return handleException(ex, server, "invoking operations ");
@@ -188,9 +206,19 @@ public class WildFlyMCPServer {
         try {
             User user = new User();
             String category = findCategory(loggingCategory);
-            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(server, user));
-            if (response.result != null && response.result.contains(category)) {
-                wildflyClient.call(new EnableLoggerRequest(server, user, category));
+            ModelNode response = wildflyClient.call(new GetLoggersRequest(server, user));
+            if (response.get("result") != null) {
+                boolean found = false;
+                for (ModelNode cat : response.get("result").asList()) {
+                    if (cat.asString().equals(loggingCategory)) {
+                        found = true;
+                    }
+                }
+                if (found) {
+                    wildflyClient.call(new EnableLoggerRequest(server, user, category));
+                } else {
+                    wildflyClient.call(new AddLoggerRequest(server, user, category));
+                }
             } else {
                 wildflyClient.call(new AddLoggerRequest(server, user, category));
             }
@@ -210,9 +238,17 @@ public class WildFlyMCPServer {
         try {
             User user = new User();
             String category = findCategory(loggingCategory);
-            GetLoggersResponse response = wildflyClient.call(new GetLoggersRequest(server, user));
-            if (response.result != null && !response.result.contains(category)) {
-                return buildErrorResponse("The logging category " + loggingCategory + " is not already enabled, you should first enabled it.");
+            ModelNode response = wildflyClient.call(new GetLoggersRequest(server, user));
+            if (response.get("result") != null) {
+                boolean found = false;
+                for (ModelNode cat : response.get("result").asList()) {
+                    if (cat.asString().equals(loggingCategory)) {
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    return buildErrorResponse("The logging category " + loggingCategory + " is not already enabled, you should first enabled it.");
+                }
             }
             wildflyClient.call(new RemoveLoggerRequest(server, user, category));
             return buildResponse("The logging category " + loggingCategory + " has been removed by using the " + category + " logger.");
@@ -231,23 +267,23 @@ public class WildFlyMCPServer {
         Server server = new Server(host, port);
         try {
             User user = new User();
-            GetLoggingFileResponse response = wildflyClient.call(new GetLoggingFileRequest(server, numLines, user));
+            ModelNode response = wildflyClient.call(new GetLoggingFileRequest(server, numLines, user));
             StringBuilder builder = new StringBuilder();
             List<String> lst = new ArrayList<>();
             lastStart = lastStart == null ? Boolean.TRUE : lastStart;
             if (lastStart && numLines == null) {
-                for (String line : response.result) {
-                    if(line.contains("WFLYSRV0049")) {
+                for (ModelNode line : response.get("result").asList()) {
+                    if (line.asString().contains("WFLYSRV0049")) {
                         lst = new ArrayList<>();
                     }
-                    lst.add(line);
+                    lst.add(line.asString());
                 }
                 for (String line : lst) {
                     builder.append(line).append("\n");
                 }
             } else {
-                for (String line : response.result) {
-                    builder.append(line).append("\n");
+                for (ModelNode line : response.get("result").asList()) {
+                    builder.append(line.asString()).append("\n");
                 }
             }
             return buildResponse("WildFly server log file Content: `" + builder.toString() + "`");
@@ -265,49 +301,48 @@ public class WildFlyMCPServer {
         User user = new User();
         try {
             VMInfo info = new VMInfo();
-            try (JMXSession session = new JMXSession(server, user)) {
-                RuntimeMXBean proxy
-                        = ManagementFactory.newPlatformMXBeanProxy(session.connection,
-                                ManagementFactory.RUNTIME_MXBEAN_NAME,
-                                RuntimeMXBean.class);
-                info.name = proxy.getName();
-                info.inputArguments = proxy.getInputArguments();
-                info.specName = proxy.getSpecName();
-                info.specVendor = proxy.getSpecVendor();
-                info.specVersion = proxy.getSpecVersion();
-                info.startTime = "" + new Date(proxy.getStartTime());
-                info.upTime = (proxy.getUptime() / 1000) + "seconds";
-                info.vmName = proxy.getVmName();
-                info.vmVendor = proxy.getVmVendor();
-                info.vmVersion = proxy.getVmVersion();
-
-                OperatingSystemMXBean proxy2
-                        = ManagementFactory.newPlatformMXBeanProxy(session.connection,
-                                ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME,
-                                OperatingSystemMXBean.class);
-                double val = proxy2.getProcessCpuLoad();
-                info.consumedCPU = "" + (int) val + "%";
-
-                MemoryMXBean proxy3
-                        = ManagementFactory.newPlatformMXBeanProxy(session.connection,
-                                ManagementFactory.MEMORY_MXBEAN_NAME,
-                                MemoryMXBean.class);
-                double max = proxy3.getHeapMemoryUsage().getMax();
-                double used = proxy3.getHeapMemoryUsage().getUsed();
-                double result = (used * 100) / max;
-                info.consumedMemory = "" + (int) result + "%";
+            ModelNode response = wildflyClient.call(new GetRuntimeMXBean(server, user));
+            ModelNode result = response.get("result");
+            info.name = result.get("name").asString();
+            for (ModelNode a : result.get("input-arguments").asList()) {
+                info.inputArguments.add(a.asString());
             }
+            info.specName = result.get("spec-name").asString();
+            info.specVendor = result.get("spec-vendor").asString();
+            info.specVersion = result.get("spec-version").asString();
+            info.startTime = new Date(result.get("start-time").asLong()).toString();
+            info.upTime = (result.get("uptime").asLong() / 1000) + "seconds";
+            info.vmName = result.get("vm-name").asString();
+            info.vmVendor = result.get("vm-vendor").asString();
+            info.vmVersion = result.get("vm-version").asString();
+
+            // Not supported by WildFly
+//            response = wildflyClient.call(new GetOperatingSystemMXBean(server, user));
+//            result = response.get("result");
+//            double val = result.get("process-cpu-load").asLong();
+//            info.consumedCPU = "" + (int) val + "%";
+            info.consumedCPU = "not available";
+            response = wildflyClient.call(new GetOperatingSystemMXBean(server, user));
+            result = response.get("result");
+            double val = result.get("system-load-average").asLong();
+            info.systemLoadAverage = "" + (int) val + "%";
+
+            response = wildflyClient.call(new GetMemoryMXBean(server, user));
+            result = response.get("result");
+            double max = result.get("heap-memory-usage").get("max").asLong();
+            double used = result.get("heap-memory-usage").get("used").asLong();
+            double res = (used * 100) / max;
+            info.consumedMemory = "" + (int) res + "%";
             ServerInfo serverInfo = new ServerInfo();
             serverInfo.vmInfo = info;
             CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
             ModelNode mn = ctx.buildRequest(":read-resource(recursive=false)");
-            String value = wildflyClient.call(server, user, mn.toJSONString(false), false);
-            ModelNode node = ModelNode.fromJSONString(value);
-            ModelNode result = node.get("result");
-            serverInfo.nodeName = result.get("name").asString();
-            serverInfo.productName = result.get("product-name").asString();
-            serverInfo.productVersion = result.get("product-version").asString();
-            serverInfo.coreVersion = result.get("release-version").asString();
+            ModelNode node = wildflyClient.call(server, user, mn);
+            ModelNode res2 = node.get("result");
+            serverInfo.nodeName = res2.get("name").asString();
+            serverInfo.productName = res2.get("product-name").asString();
+            serverInfo.productVersion = res2.get("product-version").asString();
+            serverInfo.coreVersion = res2.get("release-version").asString();
             return buildResponse(toJson(serverInfo));
 
         } catch (Exception ex) {
@@ -345,6 +380,7 @@ public class WildFlyMCPServer {
     ToolResponse getWildFlyServerAndDeploymentsStatus(
             @ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port) {
+
         Server server = new Server(host, port);
         try {
             String url = "http://" + server.host + ":" + server.port + "/health";
@@ -353,7 +389,7 @@ public class WildFlyMCPServer {
             } catch (ClientWebApplicationException ex) {
                 if (ex.getResponse().getStatus() == 404) {
                     User user = new User();
-                    WildFlyStatus status = wildflyClient.getStatus(server, user);
+                    WildFlyDMRStatus status = wildflyClient.getStatus(server, user);
                     List<String> ret = new ArrayList<>();
                     ret.addAll(status.getStatus());
                     return buildResponse(ret.toArray(String[]::new));
@@ -413,7 +449,7 @@ public class WildFlyMCPServer {
         return PromptMessage.withUserRole(new TextContent("Check the consumed resources of the JVM and the Wildfly server running on host " + server.host + ", port " + server.port + ": consumed memory, max memory and cpu utilization, prometheus metrics. "
                 + "Your reply should be short with a strong focus on what is wrong and your recommendations."));
     }
-    
+
     @Prompt(name = "wildfly-server-metrics-analyzer", description = "WildFly and JVM metrics. Analyze and summarize the metrics.")
     PromptMessage analyzeMetrics(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
@@ -440,6 +476,7 @@ public class WildFlyMCPServer {
                 + "Then you will use this table to create a graph to visually compare the data. "
                 + "Use the time in X axis, and mem consumption in Y axis"));
     }
+
     @Prompt(name = "wildfly-deployment-errors", description = "WildFly deployed applications, identify potential errors.")
     PromptMessage deploymentError(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
@@ -460,7 +497,7 @@ public class WildFlyMCPServer {
                 + "Retrieve the lines of the server log of the last time the server started. Then check that no errors are found in the traces older than the last time the server was starting."
                 + "If you find errors, and if the files exist, access the web.xml and jboss-web.xml files of the " + deploymentName + " and check for faulty content that could explain the error seen in the log file."));
     }
-    
+
     @Prompt(name = "wildfly-server-log-errors", description = "WildFly server, identify errors.")
     PromptMessage serverLogErrors(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
@@ -472,7 +509,7 @@ public class WildFlyMCPServer {
         return PromptMessage.withUserRole(new TextContent("Retrieve the server log of the Wildfly server running on host " + server.host + ", port " + server.port + ". "
                 + "If you see lines containing ERROR, analyze the error and report the findings. If you don't see lines with ERROR, reply that the log file doesn't contain any errors."));
     }
-    
+
     @Prompt(name = "wildfly-server-log-analyzer", description = "WildFly server, analyze the log file.")
     PromptMessage serverAnalyzeLogFile(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
@@ -484,7 +521,7 @@ public class WildFlyMCPServer {
         return PromptMessage.withUserRole(new TextContent("Retrieve the server log of the Wildfly server running on host " + server.host + ", port " + server.port + ". "
                 + "If you see lines containing ERROR or WARN, analyze the error and report the findings. If you don't see lines with ERROR nor WARN, provide a short summary of what the traces contain."));
     }
-    
+
     @Prompt(name = "wildfly-server-status", description = "WildFly server, running status.")
     PromptMessage serverBootErrors(@PromptArg(name = "host",
             description = "Optional WildFly server host name. By default localhost is used.",
