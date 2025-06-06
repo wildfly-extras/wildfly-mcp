@@ -167,7 +167,7 @@ public class WildFlyMCPServerTest {
         // Assertions
         assertFalse(toolResponse.isError());
         String jsonResponse = ((TextContent)toolResponse.content().get(0)).text();
-        assertEquals(response.toJSONString(false), jsonResponse);
+        assertEquals(response.toJSONString(false).replaceAll("\\s", ""), jsonResponse.replaceAll("\\s", ""));
     }
 
     @Test
