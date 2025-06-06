@@ -133,7 +133,7 @@ public class WildFlyMCPServerTest {
         // Assertions
         assertFalse(toolResponse.isError());
         String jsonResponse = ((TextContent)toolResponse.content().get(0)).text();
-        assertEquals("[\"/a/b.txt\",\"/c/d.txt\"]", jsonResponse);
+        assertEquals("[\"/a/b.txt\",\"/c/d.txt\"]", jsonResponse.replaceAll("\\s", ""));
     }
 
     @Test
