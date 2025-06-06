@@ -215,7 +215,7 @@ public class WildFlyMCPServer {
             if (response.get("result") != null) {
                 boolean found = false;
                 for (ModelNode cat : response.get("result").asList()) {
-                    if (cat.asString().equals(loggingCategory)) {
+                    if (cat.asString().equals(category)) {
                         found = true;
                     }
                 }
@@ -247,7 +247,7 @@ public class WildFlyMCPServer {
             if (response.get("result") != null) {
                 boolean found = false;
                 for (ModelNode cat : response.get("result").asList()) {
-                    if (cat.asString().equals(loggingCategory)) {
+                    if (cat.asString().equals(category)) {
                         found = true;
                     }
                 }
