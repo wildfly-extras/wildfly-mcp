@@ -389,4 +389,24 @@ public class WildFlyMCPServerTest {
         String response = ((TextContent)toolResponse.content().get(0)).text();
         assertEquals("{\"status\":\"UP\"}", response);
     }
+
+    @Test
+    public void testGetWildFlyServerAndDeploymentsStatusHealthNotFound() throws Exception {
+        // Mock health client to throw 404
+        ClientWebApplicationException exception = new ClientWebApplicationException(404);
+        when(wildflyHealthClient.getHealth(any(String.class))).thenThrow(exception);
+
+        // Mock DMR status
+        WildFlyDMRStatus dmrStatus = mock(WildFlyDMRStatus.class);
+        when(dmrStatus.getStatus()).thenReturn(java.util.Collections.singletonList("server-state: running"));
+        when(controllerClientMock.getStatus(any(Server.class), any(User.class))).thenReturn(dmrStatus);
+
+        // Call the method
+        ToolResponse toolResponse = server.getWildFlyServerAndDeploymentsStatus("localhost", "9990");
+
+        // Assertions
+        assertFalse(toolResponse.isError());
+        String response = ((TextContent)toolResponse.content().get(0)).text();
+        assertEquals("server-state: running", response);
+    }
 } 
