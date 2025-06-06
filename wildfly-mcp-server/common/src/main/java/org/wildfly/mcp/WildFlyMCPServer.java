@@ -49,6 +49,7 @@ import org.wildfly.mcp.WildFlyControllerClient.GetMemoryMXBean;
 import org.wildfly.mcp.WildFlyControllerClient.GetOperatingSystemMXBean;
 import org.wildfly.mcp.WildFlyControllerClient.GetRuntimeMXBean;
 import org.wildfly.mcp.WildFlyControllerClient.RemoveLoggerRequest;
+import org.jboss.as.cli.CommandLineException;
 
 public class WildFlyMCPServer {
 
@@ -153,11 +154,15 @@ public class WildFlyMCPServer {
             // This call, if done with the Monitor role, will be filtered. No sensitive information present.
             ModelNode mn = ctx.buildRequest("/deployment=" + name + ":read-content(path=" + path + ")");
             OperationResponse value = wildflyClient.callOperation(server, user, mn);
-            String content = WildFlyControllerClient.getAttachment(value);
+            String content = getAttachment(value);
             return buildResponse(content);
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the logging categories");
         }
+    }
+
+    String getAttachment(OperationResponse value) throws CommandLineException {
+        return WildFlyControllerClient.getAttachment(value);
     }
 
     private static void cleanupUndefined(ModelNode mn) {
