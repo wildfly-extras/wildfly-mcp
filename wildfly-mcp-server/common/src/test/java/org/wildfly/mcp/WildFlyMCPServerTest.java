@@ -363,9 +363,7 @@ public class WildFlyMCPServerTest {
     @Test
     public void testGetWildFlyPrometheusMetricsNotFound() {
         // Mock metrics client to throw 404
-        Response mockResponse = mock(Response.class);
-        when(mockResponse.getStatus()).thenReturn(404);
-        ClientWebApplicationException exception = new ClientWebApplicationException(mockResponse);
+        ClientWebApplicationException exception = new ClientWebApplicationException(404);
 
         when(wildflyMetricsClient.getMetrics(any(String.class))).thenThrow(exception);
 
