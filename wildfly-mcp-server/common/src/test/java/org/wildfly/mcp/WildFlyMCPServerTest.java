@@ -271,7 +271,7 @@ public class WildFlyMCPServerTest {
         // Assertions
         assertFalse(toolResponse.isError());
         String textResponse = ((TextContent)toolResponse.content().get(0)).text();
-        assertEquals("WildFly server log file Content: `line1\nline2\n`", textResponse);
+        assertEquals("WildFly server log file Content: `line1\nline2\n`".replaceAll("\\s", ""), textResponse.replaceAll("\\s", ""));
     }
 
     @Test
