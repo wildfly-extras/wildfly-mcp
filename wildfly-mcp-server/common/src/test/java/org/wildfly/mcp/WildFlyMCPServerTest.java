@@ -92,7 +92,7 @@ public class WildFlyMCPServerTest {
         assertFalse(toolResponse.isError());
         String jsonResponse = ((TextContent)toolResponse.content().get(0)).text();
         // The undefined property should have been removed
-        assertEquals("{\n    \"foo\" : \"bar\"\n}", jsonResponse);
+        assertEquals("{\"foo\":\"bar\"}", jsonResponse.replaceAll("\\s", ""));
     }
 
     @Test
