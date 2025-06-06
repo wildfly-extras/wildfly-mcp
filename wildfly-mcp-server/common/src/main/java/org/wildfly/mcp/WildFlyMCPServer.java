@@ -340,19 +340,24 @@ public class WildFlyMCPServer {
             info.consumedMemory = "" + (int) res + "%";
             ServerInfo serverInfo = new ServerInfo();
             serverInfo.vmInfo = info;
-            CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
-            ModelNode mn = ctx.buildRequest(":read-resource(recursive=false)");
-            ModelNode node = wildflyClient.call(server, user, mn);
-            ModelNode res2 = node.get("result");
-            serverInfo.nodeName = res2.get("name").asString();
-            serverInfo.productName = res2.get("product-name").asString();
-            serverInfo.productVersion = res2.get("product-version").asString();
-            serverInfo.coreVersion = res2.get("release-version").asString();
+            serverInfo = getServerInfo(server, user, serverInfo);
             return buildResponse(toJson(serverInfo));
 
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the consumed memory");
         }
+    }
+
+    ServerInfo getServerInfo(Server server, User user, ServerInfo serverInfo) throws Exception {
+        CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
+        ModelNode mn = ctx.buildRequest(":read-resource(recursive=false)");
+        ModelNode node = wildflyClient.call(server, user, mn);
+        ModelNode res2 = node.get("result");
+        serverInfo.nodeName = res2.get("name").asString();
+        serverInfo.productName = res2.get("product-name").asString();
+        serverInfo.productVersion = res2.get("product-version").asString();
+        serverInfo.coreVersion = res2.get("release-version").asString();
+        return serverInfo;
     }
 
     @Tool()
