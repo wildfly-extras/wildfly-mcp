@@ -9,7 +9,7 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
-import dev.langchain4j.model.chat.request.json.JsonSchemaElementHelper;
+import dev.langchain4j.internal.JsonSchemaElementUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -39,7 +39,7 @@ public class ToolHandler {
                     // Support only String tools...
                     String name = entry.getKey();
                     JsonSchemaElement schema = entry.getValue();
-                    Map<String, Object> map = JsonSchemaElementHelper.toMap(schema);
+                    Map<String, Object> map = JsonSchemaElementUtils.toMap(schema);
                     ToolDescription.ToolArg arg = new ToolDescription.ToolArg();
                     arg.description = (String) map.get("description");
                     arg.name = name;

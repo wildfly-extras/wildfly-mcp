@@ -18,7 +18,7 @@ import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.tool.ToolProvider;
 import java.io.IOException;
@@ -60,19 +60,19 @@ public class ChatBotWebSocketEndpoint {
 
     @Inject
     @Named(value = "ollama")
-    ChatLanguageModel ollama;
+    ChatModel ollama;
     @Inject
     @Named(value = "mistral")
-    ChatLanguageModel mistral;
+    ChatModel mistral;
     @Inject
     @Named(value = "openai")
-    ChatLanguageModel openai;
+    ChatModel openai;
     @Inject
     @Named(value = "github")
-    ChatLanguageModel github;
+    ChatModel github;
     @Inject
     @Named(value = "groq")
-    ChatLanguageModel groq;
+    ChatModel groq;
     @Inject
     @ConfigProperty(name = "wildfly.chatbot.mcp.config.file")
     private Path mcpConfigFile;
@@ -98,7 +98,7 @@ public class ChatBotWebSocketEndpoint {
     private final Map<String, DefaultTokenProvider> tokenProviders = new HashMap<>();
     private final List<DefaultTokenProvider> initProviders = new ArrayList<>();
     private final List<DefaultMcpClient.Builder> clientBuilders = new ArrayList<>();
-    private ChatLanguageModel activeModel;
+    private ChatModel activeModel;
     private String initExceptionMessage;
     private String initExceptionContext;
     private final Recorder recorder = new Recorder();
@@ -247,14 +247,14 @@ public class ChatBotWebSocketEndpoint {
                     .mcpClients(clients)
                     .build();
             bot = AiServices.builder(Bot.class)
-                    .chatLanguageModel(activeModel)
+                    .chatModel(activeModel)
                     .toolProvider(toolProvider)
                     .systemMessageProvider(chatMemoryId -> {
                         return promptHandler.getSystemPrompt() + (systemPrompt.isPresent() ? systemPrompt.get() : "");
                     })
                     .build();
             reportGenerator = AiServices.builder(ReportGenerator.class)
-                    .chatLanguageModel(activeModel)
+                    .chatModel(activeModel)
                     .systemMessageProvider(chatMemoryId -> {
                         return promptHandler.getGeneratorSystemPrompt();
                     })
