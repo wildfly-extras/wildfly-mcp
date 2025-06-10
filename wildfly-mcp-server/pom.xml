@@ -22,7 +22,7 @@
         <org.jboss.remotingjmx.version>3.1.0.Final</org.jboss.remotingjmx.version>
         <org.wildfly.core.version>27.0.0.Final</org.wildfly.core.version>
         <quarkus.platform.version>3.18.3</quarkus.platform.version>
-        <quarkus.mcp.version>1.0.1</quarkus.mcp.version>
+        <quarkus.mcp.version>1.2.2</quarkus.mcp.version>
         
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.0</surefire-plugin.version>

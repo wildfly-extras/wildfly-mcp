@@ -1,10 +1,9 @@
 package org.wildfly.ai.chatbot.http;
 
-import static dev.langchain4j.internal.Utils.getOrDefault;
-import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static dev.langchain4j.internal.Utils.getOrDefault;
+import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import dev.langchain4j.mcp.client.protocol.InitializationNotification;
 import dev.langchain4j.mcp.client.protocol.McpClientMessage;
 import dev.langchain4j.mcp.client.protocol.McpInitializeRequest;
@@ -39,7 +38,9 @@ public class HttpMcpTransport implements McpTransport {
     private final boolean logRequests;
     private EventSource mcpSseEventListener;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private volatile Runnable onFailure;
     private final TokenProvider tokenProvider;
+
     // this is obtained from the server after initializing the SSE channel
     private volatile String postUrl;
     private volatile McpOperationHandler messageHandler;
@@ -108,6 +109,11 @@ public class HttpMcpTransport implements McpTransport {
         // no transport-specific checks right now
     }
 
+    @Override
+    public void onFailure(Runnable actionOnFailure) {
+        this.onFailure = actionOnFailure;
+    }
+
     private CompletableFuture<JsonNode> execute(Request request, Long id) {
         CompletableFuture<JsonNode> future = new CompletableFuture<>();
         if (id != null) {
@@ -141,7 +147,8 @@ public class HttpMcpTransport implements McpTransport {
     private EventSource startSseChannel(boolean logResponses) {
         Request request = new Request.Builder().url(sseUrl).build();
         CompletableFuture<String> initializationFinished = new CompletableFuture<>();
-        SseEventListener listener = new SseEventListener(messageHandler, logResponses, initializationFinished);
+        SseEventListener listener =
+                new SseEventListener(messageHandler, logResponses, initializationFinished, onFailure);
         EventSource eventSource = EventSources.createFactory(client).newEventSource(request, listener);
         // wait for the SSE channel to be created, receive the POST url from the server, throw an exception if that
         // failed
@@ -168,11 +175,11 @@ public class HttpMcpTransport implements McpTransport {
         if (tokenProvider != null) {
             String token = tokenProvider.getToken();
             return new Request.Builder()
-                .url(postUrl)
-                .header("Content-Type", "application/json")
+                    .url(postUrl)
+                    .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + token)
-                .post(RequestBody.create(OBJECT_MAPPER.writeValueAsBytes(message)))
-                .build();
+                    .post(RequestBody.create(OBJECT_MAPPER.writeValueAsBytes(message)))
+                    .build();
         } else {
             return new Request.Builder()
                     .url(postUrl)
