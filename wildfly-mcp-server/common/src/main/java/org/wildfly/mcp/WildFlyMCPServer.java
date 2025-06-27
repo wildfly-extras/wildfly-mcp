@@ -263,14 +263,14 @@ public class WildFlyMCPServer {
             @ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port,
             @ToolArg(name = "numberOfLines", description = "200 by default, use `-1` for all lines.", required = false) String numLines,
-            @ToolArg(name = "onlyForLastServerStart", description = "True by default.", required = false) Boolean lastStart) {
+            @ToolArg(name = "onlyForLastServerStart", description = "True by default. Use 'true' or 'false' as string values.", required = false) String lastStartStr) {
         Server server = new Server(host, port);
         try {
             User user = new User();
             ModelNode response = wildflyClient.call(new GetLoggingFileRequest(server, numLines, user));
             StringBuilder builder = new StringBuilder();
             List<String> lst = new ArrayList<>();
-            lastStart = lastStart == null ? Boolean.TRUE : lastStart;
+            Boolean lastStart = parseBoolean(lastStartStr, Boolean.TRUE);
             if (lastStart && numLines == null) {
                 for (ModelNode line : response.get("result").asList()) {
                     if (line.asString().contains("WFLYSRV0049")) {
@@ -290,6 +290,22 @@ public class WildFlyMCPServer {
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the log file ");
         }
+    }
+
+    private Boolean parseBoolean(String value, Boolean defaultValue) {
+        if (value == null || value.trim().isEmpty()) {
+	    return defaultValue;
+	}
+
+	String normalizedValue = value.trim().toLowerCase();
+
+	if ("true".equals(normalizedValue)) {
+	    return Boolean.TRUE;
+	}
+	if ("false".equals(normalizedValue)) {
+            return Boolean.FALSE;
+	}
+	return defaultValue;
     }
 
     @Tool()
