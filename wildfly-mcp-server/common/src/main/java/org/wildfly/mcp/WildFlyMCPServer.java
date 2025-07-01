@@ -321,12 +321,14 @@ public class WildFlyMCPServer {
             info.vmVendor = result.get("vm-vendor").asString();
             info.vmVersion = result.get("vm-version").asString();
 
-            // Not supported by WildFly
-//            response = wildflyClient.call(new GetOperatingSystemMXBean(server, user));
-//            result = response.get("result");
-//            double val = result.get("process-cpu-load").asLong();
-//            info.consumedCPU = "" + (int) val + "%";
-            info.consumedCPU = "not available";
+            response = wildflyClient.call(new GetOperatingSystemMXBean(server, user));
+            result = response.get("result");
+            if (result.has("process-cpu-load")) {
+                double val = result.get("process-cpu-load").asLong();
+                info.consumedCPU = "" + (int) val + "%";
+            } else {
+                info.consumedCPU = "not available";
+            }
             response = wildflyClient.call(new GetOperatingSystemMXBean(server, user));
             result = response.get("result");
             double val = result.get("system-load-average").asLong();
