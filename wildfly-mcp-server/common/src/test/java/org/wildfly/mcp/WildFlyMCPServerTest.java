@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
+import io.quarkus.test.InjectMock;
 import java.lang.reflect.Field;
 import org.jboss.dmr.ModelNode;
 import org.junit.jupiter.api.BeforeEach;
