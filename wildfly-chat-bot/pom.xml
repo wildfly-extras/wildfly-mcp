@@ -25,8 +25,8 @@
         <maven.compiler.source>${maven.compiler.release}</maven.compiler.source>
         <jakartaee>10.0.0</jakartaee>
         <version.wildfly.maven.plugin>5.1.2.Final</version.wildfly.maven.plugin>
-        <version.wildfly.server>36.0.1.Final</version.wildfly.server>
-        <version.dev.langchain4j>1.0.1-beta6</version.dev.langchain4j>
+        <version.wildfly.server>37.0.0.Beta1</version.wildfly.server>
+        <version.dev.langchain4j>1.1.0-beta7</version.dev.langchain4j>
     </properties>
 
     <licenses>

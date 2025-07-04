@@ -53,6 +53,7 @@ import org.wildfly.mcp.WildFlyControllerClient.GetDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.AddDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.DisableDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.RemoveDeploymentRequest;
+import org.jboss.as.cli.CommandLineException;
 
 public class WildFlyMCPServer {
 
@@ -157,11 +158,15 @@ public class WildFlyMCPServer {
             // This call, if done with the Monitor role, will be filtered. No sensitive information present.
             ModelNode mn = ctx.buildRequest("/deployment=" + name + ":read-content(path=" + path + ")");
             OperationResponse value = wildflyClient.callOperation(server, user, mn);
-            String content = WildFlyControllerClient.getAttachment(value);
+            String content = getAttachment(value);
             return buildResponse(content);
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the logging categories");
         }
+    }
+
+    String getAttachment(OperationResponse value) throws CommandLineException {
+        return WildFlyControllerClient.getAttachment(value);
     }
 
     private static void cleanupUndefined(ModelNode mn) {
@@ -263,7 +268,7 @@ public class WildFlyMCPServer {
             if (response.get("result") != null) {
                 boolean found = false;
                 for (ModelNode cat : response.get("result").asList()) {
-                    if (cat.asString().equals(loggingCategory)) {
+                    if (cat.asString().equals(category)) {
                         found = true;
                     }
                 }
@@ -295,7 +300,7 @@ public class WildFlyMCPServer {
             if (response.get("result") != null) {
                 boolean found = false;
                 for (ModelNode cat : response.get("result").asList()) {
-                    if (cat.asString().equals(loggingCategory)) {
+                    if (cat.asString().equals(category)) {
                         found = true;
                     }
                 }
@@ -369,12 +374,14 @@ public class WildFlyMCPServer {
             info.vmVendor = result.get("vm-vendor").asString();
             info.vmVersion = result.get("vm-version").asString();
 
-            // Not supported by WildFly
-//            response = wildflyClient.call(new GetOperatingSystemMXBean(server, user));
-//            result = response.get("result");
-//            double val = result.get("process-cpu-load").asLong();
-//            info.consumedCPU = "" + (int) val + "%";
-            info.consumedCPU = "not available";
+            response = wildflyClient.call(new GetOperatingSystemMXBean(server, user));
+            result = response.get("result");
+            if (result.has("process-cpu-load")) {
+                double val = result.get("process-cpu-load").asLong();
+                info.consumedCPU = "" + (int) val + "%";
+            } else {
+                info.consumedCPU = "not available";
+            }
             response = wildflyClient.call(new GetOperatingSystemMXBean(server, user));
             result = response.get("result");
             double val = result.get("system-load-average").asLong();
@@ -388,19 +395,24 @@ public class WildFlyMCPServer {
             info.consumedMemory = "" + (int) res + "%";
             ServerInfo serverInfo = new ServerInfo();
             serverInfo.vmInfo = info;
-            CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
-            ModelNode mn = ctx.buildRequest(":read-resource(recursive=false)");
-            ModelNode node = wildflyClient.call(server, user, mn);
-            ModelNode res2 = node.get("result");
-            serverInfo.nodeName = res2.get("name").asString();
-            serverInfo.productName = res2.get("product-name").asString();
-            serverInfo.productVersion = res2.get("product-version").asString();
-            serverInfo.coreVersion = res2.get("release-version").asString();
+            serverInfo = getServerInfo(server, user, serverInfo);
             return buildResponse(toJson(serverInfo));
 
         } catch (Exception ex) {
             return handleException(ex, server, "retrieving the consumed memory");
         }
+    }
+
+    ServerInfo getServerInfo(Server server, User user, ServerInfo serverInfo) throws Exception {
+        CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
+        ModelNode mn = ctx.buildRequest(":read-resource(recursive=false)");
+        ModelNode node = wildflyClient.call(server, user, mn);
+        ModelNode res2 = node.get("result");
+        serverInfo.nodeName = res2.get("name").asString();
+        serverInfo.productName = res2.get("product-name").asString();
+        serverInfo.productVersion = res2.get("product-version").asString();
+        serverInfo.coreVersion = res2.get("release-version").asString();
+        return serverInfo;
     }
 
     @Tool()
