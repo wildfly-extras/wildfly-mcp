@@ -49,6 +49,10 @@ import org.wildfly.mcp.WildFlyControllerClient.GetMemoryMXBean;
 import org.wildfly.mcp.WildFlyControllerClient.GetOperatingSystemMXBean;
 import org.wildfly.mcp.WildFlyControllerClient.GetRuntimeMXBean;
 import org.wildfly.mcp.WildFlyControllerClient.RemoveLoggerRequest;
+import org.wildfly.mcp.WildFlyControllerClient.GetDeploymentRequest;
+import org.wildfly.mcp.WildFlyControllerClient.AddDeploymentRequest;
+import org.wildfly.mcp.WildFlyControllerClient.DisableDeploymentRequest;
+import org.wildfly.mcp.WildFlyControllerClient.RemoveDeploymentRequest;
 
 public class WildFlyMCPServer {
 
@@ -193,6 +197,55 @@ public class WildFlyMCPServer {
             return buildResponse(value);
         } catch (Exception ex) {
             return handleException(ex, server, "invoking operations ");
+        }
+    }
+
+    @Tool(description = "Deploy a new application to wildfly. If it already exists, remove it and deploy it again.")
+    @RolesAllowed("admin")
+    ToolResponse deployWildFlyApplication(@ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port,
+            @ToolArg(name = "name", description = "deployment name.", required = true) String name,
+            @ToolArg(name = "deploymentPath", description = "War or Application directory path", required = true) String deploymentPath,
+            @ToolArg(name = "archive", description = "Set false to deploy exploded.", required = true) String archive,
+            @ToolArg(name = "runtime-name", description = "Context path. (*.war)", required = true) String runtimename) {
+        Server server = new Server(host, port);
+        try {
+            User user = new User();
+            ModelNode deployments = wildflyClient.call(new GetDeploymentRequest(server, user));
+            List<String> removedlist = new ArrayList<>();
+            if (deployments.hasDefined("result")) {
+                for (ModelNode dep : deployments.get("result").asList()) {
+                    ModelNode deploymentInfo = dep.asProperty().getValue();
+                    String deployedName = deploymentInfo.get("name").asString();
+                    String deployedRuntimeName = deploymentInfo.get("runtime-name").asString();
+                    if (deployedName.equals(name) || deployedRuntimeName.equals(runtimename)) {
+                        ModelNode disableResult = wildflyClient.call(new DisableDeploymentRequest(server, user, deployedName));
+                        if (!"success".equals(disableResult.get("outcome").asString())) {
+                            return buildErrorResponse("Failed to undeploy existing deployment: " + deployedName);
+                           }
+                        ModelNode removeResult = wildflyClient.call(new RemoveDeploymentRequest(server, user, deployedName));
+                        if (!"success".equals(removeResult.get("outcome").asString())) {
+                            return buildErrorResponse("Failed to remove existing deployment: " + deployedName);
+                           }
+                        removedlist.add("deployedName: " + deployedName + "( deployedRuntimeName: " + deployedRuntimeName + " ) ");
+                        }
+                    }
+                }
+            ModelNode response = wildflyClient.call(new AddDeploymentRequest(server, user, deploymentPath, name, runtimename, archive));
+            if ("success".equals(response.get("outcome").asString())) {
+                String successDesc = (removedlist.size() > 0) ?
+                        "Removed duplicate deployments ( Total: " + removedlist.size() + " ) : " + removedlist.toString() +
+                        " And Successfully deployed application from path: " + deploymentPath
+                        : "Successfully deployed application from path: " + deploymentPath;
+                return buildResponse(successDesc);
+            } else {
+                String failureDesc = response.has("failure-description") ?
+                        response.get("failure-description").asString()
+                        : "Unknown error";
+                return buildErrorResponse("Failed to deploy application: " + failureDesc);
+                }
+        } catch (Exception ex) {
+            return handleException(ex, server, "deploying application from " + deploymentPath);
         }
     }
 
