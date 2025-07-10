@@ -73,55 +73,59 @@ public class WildFlyControllerClient {
         }
     }
 
-    public static class GetDeploymentRequest extends ManagementRequest {
+    public static class CheckDeploymentRequest extends ManagementRequest {
 
-        GetDeploymentRequest(Server server, User user) {
-            super("read-children-resources", server, user);
-        }
-
-        @Override
-        protected void addArguments(ModelNode op) {
-            op.get("child-type").set("deployment");
-        }
-    }
-
-    public static class DisableDeploymentRequest extends ManagementRequest {
-
-        DisableDeploymentRequest(Server server, User user, String deployedName ) {
-            super("undeploy", server, user);
+        CheckDeploymentRequest(Server server, User user, String name) {
+            super("read-resource", server, user);
             address.add("deployment");
-            address.add(deployedName);
+            address.add(name);
         }
     }
 
-    public static class RemoveDeploymentRequest extends ManagementRequest {
+    public static class FullReplaceDeploymentRequest extends ManagementRequest {
 
-        RemoveDeploymentRequest(Server server, User user, String deployedName ) {
-            super("remove", server, user);
-            address.add("deployment");
-            address.add(deployedName);
-        }
-    }
-    public static class AddDeploymentRequest extends ManagementRequest {
-
-        public String path;
         public String name;
         public String runtimename;
+        public String deploymentPath;
+        public String archive;
+
+        FullReplaceDeploymentRequest(Server server, User user, String name, String runtimename, String deploymentPath, String archive) {
+            super("full-replace-deployment", server, user);
+            this.name = name;
+            this.runtimename = runtimename;
+            this.deploymentPath = deploymentPath;
+            this.archive = archive;
+        }
+        @Override
+        protected void addArguments(ModelNode op) {
+            op.get("name").set(name);
+            op.get("runtime-name").set(runtimename);
+            op.get("content").add().get("path").set(deploymentPath);
+            op.get("content").get(0).get("archive").set(archive);
+            op.get("enabled").set(true);
+        }
+    }
+
+    public static class AddDeploymentRequest extends ManagementRequest {
+
+        public String name;
+        public String runtimename;
+        public String deploymentPath;
         public String archive;
 
         AddDeploymentRequest(Server server, User user, String deploymentPath, String name, String runtimename, String archive ) {
             super("add", server, user);
             address.add("deployment");
             address.add(name);
-            this.path = deploymentPath;
             this.runtimename = runtimename;
+            this.deploymentPath = deploymentPath;
             this.archive = archive;
         }
 
         @Override
         protected void addArguments(ModelNode op) {
             op.get("runtime-name").set(runtimename);
-            op.get("content").add().get("path").set(path);
+            op.get("content").add().get("path").set(deploymentPath);
             op.get("content").get(0).get("archive").set(archive);
             op.get("enabled").set(true);
         }
