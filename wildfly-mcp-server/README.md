@@ -218,6 +218,16 @@ Get the content of a file located inside a deployment deployed in the WildFly se
 - `name`: Optional deployment name. By default ROOT.war is used.
 - `path`: Required path to the deployment content.
 
+### deployWildFlyApplication
+Deploy an application to the WildFly server running on the provided host and port arguments. If an application with the same name already exists, it will be replaced.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
+- `deploymentPath`: Path to the WAR file or exploded application directory. Required.
+- `name`: The deployment name. Optional, defaults to the last portion of the deploymentPath.
+- `runtime-name`: The runtime name for the deployment. Optional, defaults to the last portion of the deploymentPath.
+
 ## Available prompts
 
 Prompts are pre-built complex questions that you can invoke from your chat bot.

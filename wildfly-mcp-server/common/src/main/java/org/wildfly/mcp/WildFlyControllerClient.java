@@ -73,6 +73,64 @@ public class WildFlyControllerClient {
         }
     }
 
+    public static class CheckDeploymentRequest extends ManagementRequest {
+
+        CheckDeploymentRequest(Server server, User user, String name) {
+            super("read-resource", server, user);
+            address.add("deployment");
+            address.add(name);
+        }
+    }
+
+    public static class FullReplaceDeploymentRequest extends ManagementRequest {
+
+        public String name;
+        public String runtimeName;
+        public String deploymentPath;
+        public String archive;
+
+        FullReplaceDeploymentRequest(Server server, User user, String name, String runtimeName, String deploymentPath, String archive) {
+            super("full-replace-deployment", server, user);
+            this.name = name;
+            this.runtimeName = runtimeName;
+            this.deploymentPath = deploymentPath;
+            this.archive = archive;
+        }
+        @Override
+        protected void addArguments(ModelNode op) {
+            op.get("name").set(name);
+            op.get("runtime-name").set(runtimeName);
+            op.get("content").add().get("path").set(deploymentPath);
+            op.get("content").get(0).get("archive").set(archive);
+            op.get("enabled").set(true);
+        }
+    }
+
+    public static class AddDeploymentRequest extends ManagementRequest {
+
+        public String name;
+        public String runtimeName;
+        public String deploymentPath;
+        public String archive;
+
+        AddDeploymentRequest(Server server, User user, String deploymentPath, String name, String runtimeName, String archive ) {
+            super("add", server, user);
+            address.add("deployment");
+            address.add(name);
+            this.runtimeName = runtimeName;
+            this.deploymentPath = deploymentPath;
+            this.archive = archive;
+        }
+
+        @Override
+        protected void addArguments(ModelNode op) {
+            op.get("runtime-name").set(runtimeName);
+            op.get("content").add().get("path").set(deploymentPath);
+            op.get("content").get(0).get("archive").set(archive);
+            op.get("enabled").set(true);
+        }
+    }
+
     public static class AddLoggerRequest extends ManagementRequest {
 
         AddLoggerRequest(Server server, User user, String category) {
