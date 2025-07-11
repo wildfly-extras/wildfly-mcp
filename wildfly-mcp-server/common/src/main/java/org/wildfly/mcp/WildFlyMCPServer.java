@@ -26,6 +26,9 @@ import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.core.Response;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -210,18 +213,19 @@ public class WildFlyMCPServer {
             @ToolArg(name = "port", required = false) String port,
             @ToolArg(name = "deploymentPath", description = "Path to WAR file or exploded application directory.", required = true) String deploymentPath,
             @ToolArg(name = "name", description = "Defaults to the last portion of the deploymentPath.", required = false) String name,
-            @ToolArg(name = "runtime-name", description = "Defaults to the last portion of the deploymentPath.", required = false) String runtimename) {
+            @ToolArg(name = "runtime-name", description = "Defaults to the last portion of the deploymentPath.", required = false) String runtimeName) {
         Server server = new Server(host, port);
         try {
             User user = new User();
-            String lastPathSegment = deploymentPath.substring(deploymentPath.lastIndexOf("/") + 1);
+            Path path = Paths.get(deploymentPath);
+            String lastPathSegment = path.getFileName().toString();
             name = (name == null || name.trim().isEmpty()) ? lastPathSegment : name;
-            runtimename = (runtimename == null || runtimename.trim().isEmpty()) ? lastPathSegment : runtimename;
-            String archive = (lastPathSegment.endsWith(".war") || lastPathSegment.endsWith(".ear")) ? "true" : "false";
+            runtimeName = (runtimeName == null || runtimeName.trim().isEmpty()) ? lastPathSegment : runtimeName;
+            String archive = Files.isDirectory(path) ? "false" : "true";
             ModelNode checkDeployment = wildflyClient.call(new CheckDeploymentRequest(server, user, name));
             ModelNode response;
             if ("success".equals(checkDeployment.get("outcome").asString())) {
-                response = wildflyClient.call(new FullReplaceDeploymentRequest(server, user, name, runtimename, deploymentPath, archive));
+                response = wildflyClient.call(new FullReplaceDeploymentRequest(server, user, name, runtimeName, deploymentPath, archive));
                 if ("success".equals(response.get("outcome").asString())) {
                     return buildResponse("Successfully replaced existing deployment: " + name);
                 } else {
@@ -230,7 +234,7 @@ public class WildFlyMCPServer {
                     return buildErrorResponse("Failed to replace deployment: " + failureDesc);
                 }
             } else {
-                response = wildflyClient.call(new AddDeploymentRequest(server, user, deploymentPath, name, runtimename, archive));
+                response = wildflyClient.call(new AddDeploymentRequest(server, user, deploymentPath, name, runtimeName, archive));
                 if ("success".equals(response.get("outcome").asString())) {
                     return buildResponse("Successfully deployed new application: " + name + " from path: " + deploymentPath);
                 } else {
