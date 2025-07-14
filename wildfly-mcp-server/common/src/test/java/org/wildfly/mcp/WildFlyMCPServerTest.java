@@ -23,8 +23,11 @@ import org.junit.jupiter.api.Test;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import io.quarkiverse.mcp.server.TextContent;
 import org.jboss.as.controller.client.OperationResponse;
+import org.wildfly.mcp.WildFlyControllerClient.AddDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.AddLoggerRequest;
+import org.wildfly.mcp.WildFlyControllerClient.CheckDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.EnableLoggerRequest;
+import org.wildfly.mcp.WildFlyControllerClient.FullReplaceDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.GetLoggersRequest;
 import org.wildfly.mcp.WildFlyControllerClient.RemoveLoggerRequest;
 import org.wildfly.mcp.WildFlyControllerClient.GetLoggingFileRequest;
@@ -404,5 +407,93 @@ public class WildFlyMCPServerTest {
         assertFalse(toolResponse.isError());
         String response = ((TextContent)toolResponse.content().get(0)).text();
         assertEquals("server-state: running", response);
+    }
+
+    @Test
+    public void testDeployWildFlyApplicationNewDeployment() throws Exception {
+        // Prepare mock response
+        ModelNode checkDeploymentResponse = new ModelNode();
+        checkDeploymentResponse.get("outcome").set("failed");
+        ModelNode addDeploymentResponse = new ModelNode();
+        addDeploymentResponse.get("outcome").set("success");
+
+        when(controllerClientMock.call(any(CheckDeploymentRequest.class)))
+                .thenReturn(checkDeploymentResponse);
+        when(controllerClientMock.call(any(AddDeploymentRequest.class)))
+                .thenReturn(addDeploymentResponse);
+
+        // Call the method
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
+
+        // Assertions
+        assertFalse(toolResponse.isError());
+        String textResponse = ((TextContent)toolResponse.content().get(0)).text();
+        assertEquals("Successfully deployed new application: test.war from path: /tmp/test.war", textResponse);
+    }
+
+    @Test
+    public void testDeployWildFlyApplicationNewDeploymentFail() throws Exception {
+        // Prepare mock response
+        ModelNode checkDeploymentResponse = new ModelNode();
+        checkDeploymentResponse.get("outcome").set("failed");
+        ModelNode addDeploymentResponse = new ModelNode();
+        addDeploymentResponse.get("outcome").set("failed");
+
+        when(controllerClientMock.call(any(CheckDeploymentRequest.class)))
+                .thenReturn(checkDeploymentResponse);
+        when(controllerClientMock.call(any(AddDeploymentRequest.class)))
+                .thenReturn(addDeploymentResponse);
+
+        // Call the method
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
+
+        // Assertions
+        assertTrue(toolResponse.isError());
+        String textResponse = ((TextContent)toolResponse.content().get(0)).text();
+        assertEquals("Failed to deploy application: Unknown error", textResponse);
+    }
+
+    @Test
+    public void testDeployWildFlyApplicationReplaceDeployment() throws Exception {
+        // Prepare mock response
+        ModelNode checkDeploymentResponse = new ModelNode();
+        checkDeploymentResponse.get("outcome").set("success");
+        ModelNode replaceDeploymentResponse = new ModelNode();
+        replaceDeploymentResponse.get("outcome").set("success");
+
+        when(controllerClientMock.call(any(CheckDeploymentRequest.class)))
+                .thenReturn(checkDeploymentResponse);
+        when(controllerClientMock.call(any(FullReplaceDeploymentRequest.class)))
+                .thenReturn(replaceDeploymentResponse);
+
+        // Call the method
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
+
+        // Assertions
+        assertFalse(toolResponse.isError());
+        String textResponse = ((TextContent)toolResponse.content().get(0)).text();
+        assertEquals("Successfully replaced existing deployment: test.war", textResponse);
+    }
+
+    @Test
+    public void testDeployWildFlyApplicationReplaceDeploymentFail() throws Exception {
+        // Prepare mock response
+        ModelNode checkDeploymentResponse = new ModelNode();
+        checkDeploymentResponse.get("outcome").set("success");
+        ModelNode replaceDeploymentResponse = new ModelNode();
+        replaceDeploymentResponse.get("outcome").set("failed");
+
+        when(controllerClientMock.call(any(CheckDeploymentRequest.class)))
+                .thenReturn(checkDeploymentResponse);
+        when(controllerClientMock.call(any(FullReplaceDeploymentRequest.class)))
+                .thenReturn(replaceDeploymentResponse);
+
+        // Call the method
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
+
+        // Assertions
+        assertTrue(toolResponse.isError());
+        String textResponse = ((TextContent)toolResponse.content().get(0)).text();
+        assertEquals("Failed to replace deployment: Unknown error", textResponse);
     }
 } 
