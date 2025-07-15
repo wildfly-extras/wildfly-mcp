@@ -35,6 +35,7 @@ import org.wildfly.mcp.WildFlyControllerClient.GetRuntimeMXBean;
 import org.wildfly.mcp.WildFlyControllerClient.GetOperatingSystemMXBean;
 import org.wildfly.mcp.WildFlyControllerClient.GetMemoryMXBean;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
+import org.wildfly.mcp.WildFlyControllerClient.UndeployRequest;
 
 
 @QuarkusTest
@@ -495,5 +496,23 @@ public class WildFlyMCPServerTest {
         assertTrue(toolResponse.isError());
         String textResponse = ((TextContent)toolResponse.content().get(0)).text();
         assertEquals("Failed to replace deployment: Unknown error", textResponse);
+    }
+
+    @Test
+    public void testUndeployWildFlyApplication() throws Exception {
+        // Prepare mock response
+        ModelNode response = new ModelNode();
+        response.get("outcome").set("success");
+
+        when(controllerClientMock.call(any(UndeployRequest.class)))
+                .thenReturn(response);
+
+        // Call the method
+        ToolResponse toolResponse = server.undeployWildFlyApplication("localhost", "9990", "test.war");
+
+        // Assertions
+        assertFalse(toolResponse.isError());
+        String textResponse = ((TextContent)toolResponse.content().get(0)).text();
+        assertEquals("Successfully undeployed deployment: test.war", textResponse);
     }
 } 

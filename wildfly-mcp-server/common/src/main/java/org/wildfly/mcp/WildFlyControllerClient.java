@@ -81,6 +81,15 @@ public class WildFlyControllerClient {
             address.add(name);
         }
     }
+    
+    public static class UndeployRequest extends ManagementRequest {
+
+        UndeployRequest(Server server, User user, String name) {
+            super("remove", server, user);
+            address.add("deployment");
+            address.add(name);
+        }
+    }
 
     public static class FullReplaceDeploymentRequest extends ManagementRequest {
 
