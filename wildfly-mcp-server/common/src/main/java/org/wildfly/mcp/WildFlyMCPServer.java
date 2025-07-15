@@ -56,6 +56,7 @@ import org.wildfly.mcp.WildFlyControllerClient.CheckDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.FullReplaceDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.AddDeploymentRequest;
 import org.jboss.as.cli.CommandLineException;
+import org.wildfly.mcp.WildFlyControllerClient.UndeployRequest;
 
 public class WildFlyMCPServer {
 
@@ -245,6 +246,27 @@ public class WildFlyMCPServer {
             }
         } catch (Exception ex) {
             return handleException(ex, server, "deploying application from " + deploymentPath);
+        }
+    }
+
+    @Tool(description = "Undeploy an application running in WildFly.")
+    @RolesAllowed("admin")
+    ToolResponse undeployWildFlyApplication(@ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port,
+            @ToolArg(name = "name", description = "Defaults to the last portion of the deploymentPath.", required = true) String name) {
+        Server server = new Server(host, port);
+        try {
+            User user = new User();
+            ModelNode response = wildflyClient.call(new UndeployRequest(server, user, name));
+            if ("success".equals(response.get("outcome").asString())) {
+                return buildResponse("Successfully undeployed deployment: " + name);
+            } else {
+                String failureDesc = response.has("failure-description")
+                        ? response.get("failure-description").asString() : "Unknown error";
+                return buildErrorResponse("Failed to undeploy deployment: " + failureDesc);
+            }
+        } catch (Exception ex) {
+            return handleException(ex, server, "undeploying application " + name);
         }
     }
 
