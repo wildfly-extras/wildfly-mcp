@@ -239,6 +239,33 @@ Undeploy an application from the WildFly server running on the provided host and
 - `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
 - `name`: The name of the deployment to undeploy.
 
+### shutdownServer
+Shutdown a running server.
+
+**Inputs**:
+- `host`: The host name on which the WildFly server is running. Optional, `localhost` is used by default.
+- `port`: The port the WildFly server is listening on. Optional, `9990` is used by default.
+- `timeout`: The graceful timeout. Optional.
+
+### provisionWildFlyServerForDeployment
+Provision a WildFly server or WildFly Bootable JAR by inspecting the content of a deployment. The deployment is then deployed to the server ready to be run.
+
+**Inputs**:
+- `deploymentPath`: Absolute path to an existing deployment.
+- `targetDirectory`: Absolute path to a non existing directory. Note that the parent directory must exists.
+- `addOns`: A list of Glow AddOns to enable (WildFly CLI, openAPI, web console, ...). Optional.
+- `serverVersion`: The WildFly server version. Optional, by default the latest is used.
+- `spaces`: The enabled Glow spaces used to discover incubating features. Optional.
+- `bootableJAR`: Produce a WildFly bootable JAR. Optional.
+
+### getWildFlyProvisioningAddOns
+List the WildFly add-ons (extra server features such as add-user.sh, jboss-cli.sh command lines, openAPI and more) that could be added when provisioning a WildFly server for the provided deployment.
+**Inputs**:
+- `deploymentPath`: Absolute path to an existing deployment.
+
+### getWildFlyDocumentationURL
+Get WildFly documentation URL
+
 ## Available prompts
 
 Prompts are pre-built complex questions that you can invoke from your chat bot.

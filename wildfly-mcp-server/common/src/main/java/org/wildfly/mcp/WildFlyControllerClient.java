@@ -90,6 +90,21 @@ public class WildFlyControllerClient {
             address.add(name);
         }
     }
+    
+    public static class ShutdownRequest extends ManagementRequest {
+        
+        private final Integer timeout;
+        ShutdownRequest(Server server, User user, Integer timeout) {
+            super("shutdown", server, user);
+            this.timeout = timeout;
+        }
+        @Override
+        protected void addArguments(ModelNode op) {
+            if(timeout != null) {
+            op.get("timeout").set(timeout);
+            }
+        }
+    }
 
     public static class FullReplaceDeploymentRequest extends ManagementRequest {
 
@@ -176,6 +191,13 @@ public class WildFlyControllerClient {
 
         GetRuntimeMXBean(Server server, User user) {
             super(server, user, "runtime");
+        }
+    }
+
+    public static class GetLoggingMXBean extends GetAbstractMXBean {
+
+        GetLoggingMXBean(Server server, User user) {
+            super(server, user, "platform-logging");
         }
     }
 

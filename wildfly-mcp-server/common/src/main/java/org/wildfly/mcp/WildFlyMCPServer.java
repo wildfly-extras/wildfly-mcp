@@ -30,8 +30,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
@@ -56,6 +58,18 @@ import org.wildfly.mcp.WildFlyControllerClient.CheckDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.FullReplaceDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.AddDeploymentRequest;
 import org.jboss.as.cli.CommandLineException;
+import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
+import org.wildfly.glow.AddOn;
+import org.wildfly.glow.Arguments;
+import org.wildfly.glow.GlowMessageWriter;
+import org.wildfly.glow.GlowSession;
+import org.wildfly.glow.OutputContent;
+import org.wildfly.glow.OutputFormat;
+import org.wildfly.glow.ScanArguments;
+import org.wildfly.glow.ScanResults;
+import org.wildfly.glow.maven.MavenResolver;
+import org.wildfly.mcp.WildFlyControllerClient.GetLoggingMXBean;
+import org.wildfly.mcp.WildFlyControllerClient.ShutdownRequest;
 import org.wildfly.mcp.WildFlyControllerClient.UndeployRequest;
 
 public class WildFlyMCPServer {
@@ -208,7 +222,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Deploy an application to WildFly. If it already exists, it will be replaced.")
+    @Tool(description = "Deploy an application to a running WildFly server. If the deployment already exists, it will be replaced.")
     @RolesAllowed("admin")
     ToolResponse deployWildFlyApplication(@ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port,
@@ -249,7 +263,7 @@ public class WildFlyMCPServer {
         }
     }
 
-    @Tool(description = "Undeploy an application running in WildFly.")
+    @Tool(description = "Undeploy an application deployed to a running WildFly server.")
     @RolesAllowed("admin")
     ToolResponse undeployWildFlyApplication(@ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port,
@@ -267,6 +281,135 @@ public class WildFlyMCPServer {
             }
         } catch (Exception ex) {
             return handleException(ex, server, "undeploying application " + name);
+        }
+    }
+
+    @Tool(description = "Provision a WildFly server or WildFly Bootable JAR by inspecting the content of a deployment. The deployment is then deployed to the server ready to be run.")
+    ToolResponse provisionWildFlyServerForDeployment(@ToolArg(name = "deploymentPath", required = true, description = "Absolute path to an existing deployment") String deploymentPath,
+            @ToolArg(name = "targetDirectory", required = true, description = "Absolute path to a non existing directory. Note that the parent directory must exists.") String targetDirectory,
+            @ToolArg(name = "addOns", required = false, description = "A list of Glow AddOns to enable") String[] addOns,
+            @ToolArg(name = "serverVersion", required = false,
+                    description = "The WildFly server version. By default the latest is used") String wildflyVersion,
+            @ToolArg(name = "spaces", required = false,
+                    description = "The enabled Glow spaces used to discover incubating features.") String[] spaces,
+            @ToolArg(name = "bootableJAR", required = false, defaultValue = "false", description = "Produce a WildFly bootable JAR") boolean bootableJAR) {
+        Path deployment = Paths.get(deploymentPath);
+        if (!Files.exists(deployment)) {
+            return buildErrorResponse("The deployment path " + deploymentPath + "doesn't exist");
+        }
+        Path target = Paths.get(targetDirectory);
+        if (Files.exists(target)) {
+            return buildErrorResponse("The target directory " + targetDirectory + " already exists. Delete it first");
+        }
+
+        ScanArguments.Builder builder = Arguments.scanBuilder();
+        List<Path> deployments = new ArrayList<>();
+        deployments.add(deployment);
+        builder.setBinaries(deployments);
+        if (addOns != null) {
+            Set<String> set = new HashSet<>(Arrays.asList(addOns));
+            builder.setUserEnabledAddOns(set);
+        }
+        if (wildflyVersion != null) {
+            builder.setVersion(wildflyVersion);
+        }
+        if (spaces != null) {
+            Set<String> set = new HashSet<>(Arrays.asList(spaces));
+            builder.setSpaces(set);
+        }
+        if (bootableJAR) {
+            builder.setOutput(OutputFormat.BOOTABLE_JAR);
+        } else {
+            builder.setOutput(OutputFormat.SERVER);
+        }
+        Arguments args = builder.build();
+
+        try {
+            MavenRepoManager repoManager = MavenResolver.newMavenResolver();
+            ScanResults scanResults = GlowSession.scan(repoManager, args, GlowMessageWriter.DEFAULT);
+            OutputContent content = scanResults.outputConfig(target, null);
+        } catch (Exception ex) {
+            return buildErrorResponse(ex.getMessage());
+        }
+        return buildResponse("The deployment " + deploymentPath + " has been deployed in the WildFly server provisioned in " + target);
+    }
+
+    @Tool(description = "Shutdown a running server")
+    @RolesAllowed("admin")
+    ToolResponse shutdownServer(@ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port,
+            @ToolArg(name = "timeout", required = false, description = "Graceful shutdown timeout") Integer timeout) {
+        Server server = new Server(host, port);
+        try {
+            User user = new User();
+            ModelNode response = wildflyClient.call(new ShutdownRequest(server, user, timeout));
+            if ("success".equals(response.get("outcome").asString())) {
+                return buildResponse("Successfully shutdown he server");
+            } else {
+                String failureDesc = response.has("failure-description")
+                        ? response.get("failure-description").asString() : "Unknown error";
+                return buildErrorResponse("Failed to shutdown the server: " + failureDesc);
+            }
+        } catch (Exception ex) {
+            return handleException(ex, server, "shuting down server");
+        }
+    }
+
+    @Tool(description = "List the WildFly add-ons (extra server features such as add-user.sh, jboss-cli.sh command lines, openAPI and more) "
+            + "that could be added when provisioning a WildFly server for the provided deployment.")
+    ToolResponse getWildFlyProvisioningAddOns(
+            @ToolArg(name = "deploymentPath", required = true, description = "Absolute path to an existing deployment") String deploymentPath) {
+        try {
+            ScanArguments.Builder builder = Arguments.scanBuilder();
+            List<Path> binaries = new ArrayList<>();
+            Path dep = Paths.get(deploymentPath);
+            if (!Files.exists(dep)) {
+                throw new Exception("The file doesn't exist. It must be an absolute path to a deployment file.");
+            }
+            binaries.add(dep);
+            builder.setBinaries(binaries);
+            builder.setOutput(OutputFormat.PROVISIONING_XML);
+            builder.setSuggest(true);
+            MavenRepoManager repoManager = MavenResolver.newMavenResolver();
+            ScanResults scanResults = GlowSession.scan(repoManager, builder.build(), GlowMessageWriter.DEFAULT);
+            StringBuilder strBuilder = new StringBuilder();
+            strBuilder.append("<add-ons>\n");
+            Iterator<AddOn> it = scanResults.getSuggestions().getPossibleAddOns().iterator();
+            while (it.hasNext()) {
+                AddOn addOn = it.next();
+                strBuilder.append("<!-- " + addOn.getDescription() + " -->\n");
+                strBuilder.append("<add-on>" + addOn.getName() + "</add-on>\n");
+            }
+            strBuilder.append("</add-ons>");
+            return buildResponse(strBuilder.toString());
+        } catch (Exception ex) {
+            return buildErrorResponse(ex.getMessage());
+        }
+    }
+
+    @Tool(description = "Get WildFly documentation URL")
+    @RolesAllowed("admin")
+    ToolResponse getWildFlyDocumentationURL() {
+        return buildResponse("https://docs.wildfly.org/");
+    }
+
+    @Tool(description = "List all the logging categories one can enable in the WildFly server")
+    @RolesAllowed("admin")
+    ToolResponse listAvailableLoggingCategories(
+            @ToolArg(name = "host", required = false) String host,
+            @ToolArg(name = "port", required = false) String port) {
+        Server server = new Server(host, port);
+        User user = new User();
+        try {
+            ModelNode response = wildflyClient.call(new GetLoggingMXBean(server, user));
+            ModelNode result = response.get("result");
+            if (result.isDefined()) {
+                return buildResponse(result.toJSONString(false));
+            } else {
+                return buildResponse("This server version doesn't expose the list of available logging categories. Use a more recent WildFly server");
+            }
+        } catch (Exception ex) {
+            return handleException(ex, server, "retrieving the logging categories");
         }
     }
 
