@@ -334,7 +334,7 @@ public class WildFlyMCPServer {
         return buildResponse("The deployment " + deploymentPath + " has been deployed in the WildFly server provisioned in " + target);
     }
 
-    @Tool(description = "Shutdown a running server")
+    @Tool(description = "Stop a running server")
     @RolesAllowed("admin")
     ToolResponse shutdownServer(@ToolArg(name = "host", required = false) String host,
             @ToolArg(name = "port", required = false) String port,
@@ -344,14 +344,14 @@ public class WildFlyMCPServer {
             User user = new User();
             ModelNode response = wildflyClient.call(new ShutdownRequest(server, user, timeout));
             if ("success".equals(response.get("outcome").asString())) {
-                return buildResponse("Successfully shutdown he server");
+                return buildResponse("Successfull shutdown of the server");
             } else {
                 String failureDesc = response.has("failure-description")
                         ? response.get("failure-description").asString() : "Unknown error";
                 return buildErrorResponse("Failed to shutdown the server: " + failureDesc);
             }
         } catch (Exception ex) {
-            return handleException(ex, server, "shuting down server");
+            return handleException(ex, server, "shutdown of the server");
         }
     }
 

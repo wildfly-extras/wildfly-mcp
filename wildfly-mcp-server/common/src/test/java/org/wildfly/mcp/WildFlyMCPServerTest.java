@@ -552,4 +552,16 @@ public class WildFlyMCPServerTest {
         String textResponse = ((TextContent)toolResponse.content().get(0)).text();
         assertEquals("https://docs.wildfly.org/", textResponse);
     }
-} 
+    
+    @Test
+    public void testShutdown() throws Exception {
+        ModelNode response = new ModelNode();
+        response.get("outcome").set("success");
+        when(controllerClientMock.call(any(WildFlyControllerClient.ShutdownRequest.class)))
+                .thenReturn(response);
+        ToolResponse toolResponse = server.shutdownServer(null, null, null);
+        assertFalse(toolResponse.isError());
+        String textResponse = ((TextContent)toolResponse.content().get(0)).text();
+        assertEquals("Successfull shutdown of the server", textResponse);
+    }
+}
