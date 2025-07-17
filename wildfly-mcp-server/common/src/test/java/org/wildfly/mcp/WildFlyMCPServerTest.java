@@ -22,6 +22,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import io.quarkiverse.mcp.server.TextContent;
+import java.util.ArrayList;
+import java.util.List;
 import org.jboss.as.controller.client.OperationResponse;
 import org.wildfly.mcp.WildFlyControllerClient.AddDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.AddLoggerRequest;
@@ -514,5 +516,40 @@ public class WildFlyMCPServerTest {
         assertFalse(toolResponse.isError());
         String textResponse = ((TextContent)toolResponse.content().get(0)).text();
         assertEquals("Successfully undeployed deployment: test.war", textResponse);
+    }
+    
+    @Test
+    public void testListLoggingCategories() throws Exception {
+        // Prepare mock response
+        ModelNode response = new ModelNode();
+        response.get("outcome").set("success");
+        ModelNode runtimeResult = response.get("result");
+        ModelNode category = new ModelNode();
+        category.set("foo");
+        List<ModelNode> lst = new ArrayList<>();
+        lst.add(category);
+        runtimeResult.get("logger-names").set(lst);
+
+        when(controllerClientMock.call(any(WildFlyControllerClient.GetLoggingMXBean.class)))
+                .thenReturn(response);
+
+        // Call the method
+        ToolResponse toolResponse = server.listAvailableLoggingCategories("localhost", "9990");
+
+        // Assertions
+        assertFalse(toolResponse.isError());
+        String textResponse = ((TextContent)toolResponse.content().get(0)).text();
+        ModelNode reply = ModelNode.fromJSONString(textResponse);
+        assertEquals(runtimeResult, reply);
+    }
+
+    @Test
+    public void testGetWildFlyDoc() throws Exception {
+        ToolResponse toolResponse = server.getWildFlyDocumentationURL();
+        
+        // Assertions
+        assertFalse(toolResponse.isError());
+        String textResponse = ((TextContent)toolResponse.content().get(0)).text();
+        assertEquals("https://docs.wildfly.org/", textResponse);
     }
 } 
