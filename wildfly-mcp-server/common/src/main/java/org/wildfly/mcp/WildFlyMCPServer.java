@@ -228,7 +228,9 @@ public class WildFlyMCPServer {
             @ToolArg(name = "port", required = false) String port,
             @ToolArg(name = "deploymentPath", description = "Path to WAR file or exploded application directory.", required = true) String deploymentPath,
             @ToolArg(name = "name", description = "Defaults to the last portion of the deploymentPath.", required = false) String name,
-            @ToolArg(name = "runtime-name", description = "Defaults to the last portion of the deploymentPath.", required = false) String runtimeName) {
+            @ToolArg(name = "runtime-name", description = "Defaults to the last portion of the deploymentPath.", required = false) String runtimeName,
+            @ToolArg(name = "namaged", description = "Use this only for unmanaged deployments. defaults to True.", defaultValue="true", required = false) String managed
+    ) {
         Server server = new Server(host, port);
         try {
             User user = new User();
@@ -237,26 +239,34 @@ public class WildFlyMCPServer {
             name = (name == null || name.trim().isEmpty()) ? lastPathSegment : name;
             runtimeName = (runtimeName == null || runtimeName.trim().isEmpty()) ? lastPathSegment : runtimeName;
             String archive = Files.isDirectory(path) ? "false" : "true";
+            boolean isManaged = "true".equalsIgnoreCase(managed);
             ModelNode checkDeployment = wildflyClient.call(new CheckDeploymentRequest(server, user, name));
+            boolean isDeployed = "success".equals(checkDeployment.get("outcome").asString());
             ModelNode response;
-            if ("success".equals(checkDeployment.get("outcome").asString())) {
-                response = wildflyClient.call(new FullReplaceDeploymentRequest(server, user, name, runtimeName, deploymentPath, archive));
-                if ("success".equals(response.get("outcome").asString())) {
-                    return buildResponse("Successfully replaced existing deployment: " + name);
-                } else {
-                    String failureDesc = response.has("failure-description") ?
-                            response.get("failure-description").asString() : "Unknown error";
-                    return buildErrorResponse("Failed to replace deployment: " + failureDesc);
-                }
+            if (isManaged) {
+                CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
+                String op = ((isDeployed
+                        ? ":full-replace-deployment(name=" + name + ","
+                        : "/deployment=" + name + ":add(")
+                        + "content=[{input-stream-index=0}],enabled=true,runtime-name=") + runtimeName + ")";
+                ModelNode mn = ctx.buildRequest(op);
+                OperationResponse value = wildflyClient.callOperation(server, user, mn, deploymentPath);
+                response = value.getResponseNode();
             } else {
-                response = wildflyClient.call(new AddDeploymentRequest(server, user, deploymentPath, name, runtimeName, archive));
-                if ("success".equals(response.get("outcome").asString())) {
-                    return buildResponse("Successfully deployed new application: " + name + " from path: " + deploymentPath);
-                } else {
-                    String failureDesc = response.has("failure-description") ?
-                            response.get("failure-description").asString() : "Unknown error";
-                    return buildErrorResponse("Failed to deploy application: " + failureDesc);
-                }
+                response = isDeployed
+                        ? wildflyClient.call(new FullReplaceDeploymentRequest(server, user, name, runtimeName, deploymentPath, archive))
+                        : wildflyClient.call(new AddDeploymentRequest(server, user, deploymentPath, name, runtimeName, archive));
+              }
+            if ("success".equals(response.get("outcome").asString())) {
+                return buildResponse((isDeployed
+                        ? "Successfully replaced existing deployment: "
+                        : "Successfully deployed new application: ") + name + " from path: " + deploymentPath);
+            } else {
+                String failureDesc = response.has("failure-description") ?
+                        response.get("failure-description").asString() : "Unknown error";
+                return buildErrorResponse((isDeployed
+                        ? "Failed to replace deployment: "
+                        : "Failed to deploy new application: ") + failureDesc);
             }
         } catch (Exception ex) {
             return handleException(ex, server, "deploying application from " + deploymentPath);

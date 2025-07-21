@@ -426,7 +426,7 @@ public class WildFlyMCPServerTest {
                 .thenReturn(addDeploymentResponse);
 
         // Call the method
-        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null, null);
 
         // Assertions
         assertFalse(toolResponse.isError());
@@ -448,12 +448,12 @@ public class WildFlyMCPServerTest {
                 .thenReturn(addDeploymentResponse);
 
         // Call the method
-        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null, null);
 
         // Assertions
         assertTrue(toolResponse.isError());
         String textResponse = ((TextContent)toolResponse.content().get(0)).text();
-        assertEquals("Failed to deploy application: Unknown error", textResponse);
+        assertEquals("Failed to deploy new application: Unknown error", textResponse);
     }
 
     @Test
@@ -470,12 +470,12 @@ public class WildFlyMCPServerTest {
                 .thenReturn(replaceDeploymentResponse);
 
         // Call the method
-        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null, null);
 
         // Assertions
         assertFalse(toolResponse.isError());
         String textResponse = ((TextContent)toolResponse.content().get(0)).text();
-        assertEquals("Successfully replaced existing deployment: test.war", textResponse);
+        assertEquals("Successfully replaced existing deployment: test.war from path: /tmp/test.war", textResponse);
     }
 
     @Test
@@ -492,7 +492,7 @@ public class WildFlyMCPServerTest {
                 .thenReturn(replaceDeploymentResponse);
 
         // Call the method
-        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null, null);
 
         // Assertions
         assertTrue(toolResponse.isError());

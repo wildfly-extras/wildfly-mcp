@@ -7,6 +7,7 @@ package org.wildfly.mcp;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -370,6 +371,15 @@ public class WildFlyControllerClient {
         OperationResponse mn = client.executeOperation(opBuilder.build(), OperationMessageHandler.DISCARD);
         return mn;
     }
+
+    public OperationResponse callOperation(Server server, User user, ModelNode op, String deploymentPath) throws Exception {
+        ModelControllerClient client = buildController(server, user);
+        OperationBuilder opBuilder = new OperationBuilder(op);
+        opBuilder.addFileAsAttachment(new File(deploymentPath));
+        OperationResponse mn = client.executeOperation(opBuilder.build(), OperationMessageHandler.DISCARD);
+        return mn;
+    }
+
     public WildFlyDMRStatus getStatus(Server server, User user) throws Exception {
         String serverState = call(new ReadServerStateRequest(server, user)).get("result").asString();
         String runningMode = call(new ReadRunningModeRequest(server, user)).get("result").asString();
