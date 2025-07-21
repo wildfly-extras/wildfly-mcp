@@ -229,7 +229,7 @@ public class WildFlyMCPServer {
             @ToolArg(name = "deploymentPath", description = "Path to WAR file or exploded application directory.", required = true) String deploymentPath,
             @ToolArg(name = "name", description = "Defaults to the last portion of the deploymentPath.", required = false) String name,
             @ToolArg(name = "runtime-name", description = "Defaults to the last portion of the deploymentPath.", required = false) String runtimeName,
-            @ToolArg(name = "namaged", description = "Use this only for unmanaged deployments. defaults to True.", defaultValue="true", required = false) String managed
+            @ToolArg(name = "managed", description = "Use this only for unmanaged deployments. defaults to True.", defaultValue="true", required = false) String managed
     ) {
         Server server = new Server(host, port);
         try {
