@@ -25,11 +25,9 @@ import io.quarkiverse.mcp.server.TextContent;
 import java.util.ArrayList;
 import java.util.List;
 import org.jboss.as.controller.client.OperationResponse;
-import org.wildfly.mcp.WildFlyControllerClient.AddDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.AddLoggerRequest;
 import org.wildfly.mcp.WildFlyControllerClient.CheckDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.EnableLoggerRequest;
-import org.wildfly.mcp.WildFlyControllerClient.FullReplaceDeploymentRequest;
 import org.wildfly.mcp.WildFlyControllerClient.GetLoggersRequest;
 import org.wildfly.mcp.WildFlyControllerClient.RemoveLoggerRequest;
 import org.wildfly.mcp.WildFlyControllerClient.GetLoggingFileRequest;
@@ -417,16 +415,19 @@ public class WildFlyMCPServerTest {
         // Prepare mock response
         ModelNode checkDeploymentResponse = new ModelNode();
         checkDeploymentResponse.get("outcome").set("failed");
-        ModelNode addDeploymentResponse = new ModelNode();
-        addDeploymentResponse.get("outcome").set("success");
+        ModelNode responseNode = new ModelNode();
+        responseNode.get("outcome").set("success");
+        OperationResponse opResponse = mock(OperationResponse.class);
 
+        when(opResponse.getResponseNode())
+                .thenReturn(responseNode);
         when(controllerClientMock.call(any(CheckDeploymentRequest.class)))
                 .thenReturn(checkDeploymentResponse);
-        when(controllerClientMock.call(any(AddDeploymentRequest.class)))
-                .thenReturn(addDeploymentResponse);
+        when(controllerClientMock.callOperation(any(), any(), any(), any()))
+                .thenReturn(opResponse);
 
         // Call the method
-        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null, null);
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
 
         // Assertions
         assertFalse(toolResponse.isError());
@@ -439,16 +440,19 @@ public class WildFlyMCPServerTest {
         // Prepare mock response
         ModelNode checkDeploymentResponse = new ModelNode();
         checkDeploymentResponse.get("outcome").set("failed");
-        ModelNode addDeploymentResponse = new ModelNode();
-        addDeploymentResponse.get("outcome").set("failed");
+        ModelNode responseNode = new ModelNode();
+        responseNode.get("outcome").set("failed");
+        OperationResponse opResponse = mock(OperationResponse.class);
 
+        when(opResponse.getResponseNode())
+                .thenReturn(responseNode);
         when(controllerClientMock.call(any(CheckDeploymentRequest.class)))
                 .thenReturn(checkDeploymentResponse);
-        when(controllerClientMock.call(any(AddDeploymentRequest.class)))
-                .thenReturn(addDeploymentResponse);
+        when(controllerClientMock.callOperation(any(), any(), any(), any()))
+                .thenReturn(opResponse);
 
         // Call the method
-        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null, null);
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
 
         // Assertions
         assertTrue(toolResponse.isError());
@@ -461,16 +465,19 @@ public class WildFlyMCPServerTest {
         // Prepare mock response
         ModelNode checkDeploymentResponse = new ModelNode();
         checkDeploymentResponse.get("outcome").set("success");
-        ModelNode replaceDeploymentResponse = new ModelNode();
-        replaceDeploymentResponse.get("outcome").set("success");
+        ModelNode responseNode = new ModelNode();
+        responseNode.get("outcome").set("success");
+        OperationResponse opResponse = mock(OperationResponse.class);
 
+        when(opResponse.getResponseNode())
+                .thenReturn(responseNode);
         when(controllerClientMock.call(any(CheckDeploymentRequest.class)))
                 .thenReturn(checkDeploymentResponse);
-        when(controllerClientMock.call(any(FullReplaceDeploymentRequest.class)))
-                .thenReturn(replaceDeploymentResponse);
+        when(controllerClientMock.callOperation(any(), any(), any(), any()))
+                .thenReturn(opResponse);
 
         // Call the method
-        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null, null);
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
 
         // Assertions
         assertFalse(toolResponse.isError());
@@ -483,16 +490,19 @@ public class WildFlyMCPServerTest {
         // Prepare mock response
         ModelNode checkDeploymentResponse = new ModelNode();
         checkDeploymentResponse.get("outcome").set("success");
-        ModelNode replaceDeploymentResponse = new ModelNode();
-        replaceDeploymentResponse.get("outcome").set("failed");
+        ModelNode responseNode = new ModelNode();
+        responseNode.get("outcome").set("failed");
+        OperationResponse opResponse = mock(OperationResponse.class);
 
+        when(opResponse.getResponseNode())
+                .thenReturn(responseNode);
         when(controllerClientMock.call(any(CheckDeploymentRequest.class)))
                 .thenReturn(checkDeploymentResponse);
-        when(controllerClientMock.call(any(FullReplaceDeploymentRequest.class)))
-                .thenReturn(replaceDeploymentResponse);
+        when(controllerClientMock.callOperation(any(), any(), any(), any()))
+                .thenReturn(opResponse);
 
         // Call the method
-        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null, null);
+        ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
 
         // Assertions
         assertTrue(toolResponse.isError());
