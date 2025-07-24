@@ -7,7 +7,7 @@
         <version>1.0.0.Alpha5-SNAPSHOT</version>
     </parent>
     <artifactId>wildfly-mcp-server-sse</artifactId>
-
+    <description>WildFly MCP server SSE</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

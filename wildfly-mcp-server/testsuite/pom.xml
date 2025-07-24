@@ -7,7 +7,7 @@
     <version>1.0.0.Alpha5-SNAPSHOT</version>
   </parent>
   <artifactId>wildfly-mcp-server-testsuite</artifactId>
-
+  <description>WildFly MCP server testsuite</description>
   <dependencies>
     <dependency>
       <groupId>org.wildfly.mcp</groupId>
