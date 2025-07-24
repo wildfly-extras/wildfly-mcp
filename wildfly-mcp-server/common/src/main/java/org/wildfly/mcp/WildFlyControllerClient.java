@@ -7,6 +7,7 @@ package org.wildfly.mcp;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,55 +104,6 @@ public class WildFlyControllerClient {
             if(timeout != null) {
             op.get("timeout").set(timeout);
             }
-        }
-    }
-
-    public static class FullReplaceDeploymentRequest extends ManagementRequest {
-
-        public String name;
-        public String runtimeName;
-        public String deploymentPath;
-        public String archive;
-
-        FullReplaceDeploymentRequest(Server server, User user, String name, String runtimeName, String deploymentPath, String archive) {
-            super("full-replace-deployment", server, user);
-            this.name = name;
-            this.runtimeName = runtimeName;
-            this.deploymentPath = deploymentPath;
-            this.archive = archive;
-        }
-        @Override
-        protected void addArguments(ModelNode op) {
-            op.get("name").set(name);
-            op.get("runtime-name").set(runtimeName);
-            op.get("content").add().get("path").set(deploymentPath);
-            op.get("content").get(0).get("archive").set(archive);
-            op.get("enabled").set(true);
-        }
-    }
-
-    public static class AddDeploymentRequest extends ManagementRequest {
-
-        public String name;
-        public String runtimeName;
-        public String deploymentPath;
-        public String archive;
-
-        AddDeploymentRequest(Server server, User user, String deploymentPath, String name, String runtimeName, String archive ) {
-            super("add", server, user);
-            address.add("deployment");
-            address.add(name);
-            this.runtimeName = runtimeName;
-            this.deploymentPath = deploymentPath;
-            this.archive = archive;
-        }
-
-        @Override
-        protected void addArguments(ModelNode op) {
-            op.get("runtime-name").set(runtimeName);
-            op.get("content").add().get("path").set(deploymentPath);
-            op.get("content").get(0).get("archive").set(archive);
-            op.get("enabled").set(true);
         }
     }
 
@@ -367,6 +319,13 @@ public class WildFlyControllerClient {
     public OperationResponse callOperation(Server server, User user, ModelNode op) throws Exception {
         ModelControllerClient client = buildController(server, user);
         OperationBuilder opBuilder = new OperationBuilder(op);
+        OperationResponse mn = client.executeOperation(opBuilder.build(), OperationMessageHandler.DISCARD);
+        return mn;
+    }
+    public OperationResponse callOperation(Server server, User user, ModelNode op, String deploymentPath) throws Exception {
+        ModelControllerClient client = buildController(server, user);
+        OperationBuilder opBuilder = new OperationBuilder(op);
+        opBuilder.addFileAsAttachment(new File(deploymentPath));
         OperationResponse mn = client.executeOperation(opBuilder.build(), OperationMessageHandler.DISCARD);
         return mn;
     }
