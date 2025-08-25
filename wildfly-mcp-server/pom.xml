@@ -8,7 +8,7 @@
     </parent>
     <groupId>org.wildfly.mcp</groupId>
     <artifactId>wildfly-mcp-server-parent</artifactId>
-    <version>1.0.0.Alpha7-SNAPSHOT</version>
+    <version>1.0.0.Alpha7</version>
     <packaging>pom</packaging>
     <description>WildFly MCP server</description>
     <name>WildFly MCP server</name>
