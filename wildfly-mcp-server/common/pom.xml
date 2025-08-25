@@ -8,6 +8,7 @@
   </parent>
   <artifactId>wildfly-mcp-server-common</artifactId>
   <description>WildFly MCP server common</description>
+  <name>WildFly MCP server common</name>
   <dependencies>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>

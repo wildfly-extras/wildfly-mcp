@@ -8,6 +8,7 @@
         <version>1.0.0.Alpha7-SNAPSHOT</version>
     </parent>
     <description>WildFly MCP server STDIO</description>
+    <name>WildFly MCP server STDIO</name>
     <dependencies>
         <dependency>
             <groupId>org.wildfly.mcp</groupId>

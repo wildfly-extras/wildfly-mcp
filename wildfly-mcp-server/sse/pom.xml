@@ -8,6 +8,7 @@
     </parent>
     <artifactId>wildfly-mcp-server-sse</artifactId>
     <description>WildFly MCP server SSE</description>
+    <name>WildFly MCP server SSE</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
