@@ -11,6 +11,7 @@
     <version>1.0.0.Alpha6-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>WildFly MCP server</description>
+    <name>WildFly MCP server</name>
     <url>https://github.com/wildfly-extras/wildfly-mcp</url>
     <licenses>
       <license>
