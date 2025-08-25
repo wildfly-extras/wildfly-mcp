@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.wildfly.mcp</groupId>
         <artifactId>wildfly-mcp-server-parent</artifactId>
-        <version>1.0.0.Alpha7</version>
+        <version>1.0.0.Alpha8-SNAPSHOT</version>
     </parent>
     <artifactId>wildfly-mcp-server-sse</artifactId>
     <description>WildFly MCP server SSE</description>
