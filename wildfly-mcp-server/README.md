@@ -93,6 +93,43 @@ When a user with the `Monitor` role is used, the following tools would fail:
 
 In addition, write operations are not allowed when invoking the `invokeWildFlyCLIOperation` tool.
 
+### Read-only mode
+
+In addition to (and independently of) WildFly RBAC, the MCP server itself can be started in a read-only mode. 
+When enabled, the server refuses any operation that would modify the connected WildFly server, regardless of the 
+WildFly user's role. This provides defense-in-depth: safety no longer depends on configuring RBAC on every target server, 
+and it prevents an LLM from accidentally modifying or stopping a server.
+
+Read-only mode is enabled with the `WILDFLY_MCP_SERVER_READONLY` environment variable or the `org.wildfly.readonly` 
+system property:
+
+```
+{
+  "mcpServers": {
+    "wildfly": {
+            "command": "java",
+            "args": ["-Dorg.wildfly.readonly=true",
+                     "-Dorg.wildfly.user.name=chatbot-user",
+                     "-Dorg.wildfly.user.password=chatbot-user",
+                     "-jar",
+                     "[path to the repository]/wildfly-mcp-server/stdio/target/wildfly-mcp-server-stdio-runner.jar"]
+    }
+  }
+}
+```
+
+When read-only mode is enabled:
+
+* The following tools are not allowed and fail with an explicit message: `deployWildFlyApplication`, `undeployWildFlyApplication`, 
+`shutdownServer`, `enableWildFlyLoggingCategory`, `removeWildFlyLoggingCategory`.
+
+* The `invokeWildFlyCLIOperation` tool only allows operations that the WildFly management model itself declares as read-only. 
+Before running an operation, the server is queried with `read-operation-description` and the operation is rejected unless its 
+`read-only` flag is `true`. This uses the server's own metadata as the source of truth rather than matching on the operation name, 
+so an operation that looks read-only but is implemented as a write operation is still rejected (composite operations are rejected too).
+
+* All other read-only tools remain fully available.
+
 ## Note on sensitive information
 
 * Any sensitive information located in your server configuration file are not exposed when 

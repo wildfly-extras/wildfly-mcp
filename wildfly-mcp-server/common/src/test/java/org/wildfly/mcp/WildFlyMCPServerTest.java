@@ -574,4 +574,111 @@ public class WildFlyMCPServerTest {
         String textResponse = ((TextContent)toolResponse.content().get(0)).text();
         assertEquals("Successfull shutdown of the server", textResponse);
     }
+
+    @Test
+    public void testReadOnlyModeAllowsReadCLIOperation() throws Exception {
+        // The management model declares the operation as read-only.
+        ModelNode response = new ModelNode();
+        response.get("result").get("read-only").set(true);
+        when(controllerClientMock.call(any(Server.class), any(User.class), any(ModelNode.class)))
+                .thenReturn(response);
+
+        System.setProperty(WildFlyMCPServer.READ_ONLY_PROPERTY, "true");
+        try {
+            ToolResponse toolResponse = server.invokeWildFlyCLIOperation("localhost", "9990", ":whoami");
+            assertFalse(toolResponse.isError());
+        } finally {
+            System.clearProperty(WildFlyMCPServer.READ_ONLY_PROPERTY);
+        }
+    }
+
+    @Test
+    public void testReadOnlyModeBlocksWriteCLIOperation() throws Exception {
+        // The management model declares the operation as NOT read-only.
+        ModelNode response = new ModelNode();
+        response.get("result").get("read-only").set(false);
+        when(controllerClientMock.call(any(Server.class), any(User.class), any(ModelNode.class)))
+                .thenReturn(response);
+
+        System.setProperty(WildFlyMCPServer.READ_ONLY_PROPERTY, "true");
+        try {
+            ToolResponse toolResponse = server.invokeWildFlyCLIOperation("localhost", "9990", ":shutdown");
+            assertTrue(toolResponse.isError());
+        } finally {
+            System.clearProperty(WildFlyMCPServer.READ_ONLY_PROPERTY);
+        }
+    }
+
+    @Test
+    public void testReadOnlyModeRejectsWriteOperationWithReadOnlyLookingName() throws Exception {
+        // The operation name looks read-only, but the management model declares
+        // it as a write operation. The server metadata is the source of truth.
+        ModelNode response = new ModelNode();
+        response.get("result").get("read-only").set(false);
+        when(controllerClientMock.call(any(Server.class), any(User.class), any(ModelNode.class)))
+                .thenReturn(response);
+
+        System.setProperty(WildFlyMCPServer.READ_ONLY_PROPERTY, "true");
+        try {
+            ToolResponse toolResponse = server.invokeWildFlyCLIOperation("localhost", "9990", "/subsystem=foo:read-something");
+            assertTrue(toolResponse.isError());
+        } finally {
+            System.clearProperty(WildFlyMCPServer.READ_ONLY_PROPERTY);
+        }
+    }
+
+    @Test
+    public void testReadOnlyModeBlocksShutdown() throws Exception {
+        System.setProperty(WildFlyMCPServer.READ_ONLY_PROPERTY, "true");
+        try {
+            ToolResponse toolResponse = server.shutdownServer(null, null, null);
+            assertTrue(toolResponse.isError());
+        } finally {
+            System.clearProperty(WildFlyMCPServer.READ_ONLY_PROPERTY);
+        }
+    }
+
+    @Test
+    public void testReadOnlyModeBlocksDeploy() throws Exception {
+        System.setProperty(WildFlyMCPServer.READ_ONLY_PROPERTY, "true");
+        try {
+            ToolResponse toolResponse = server.deployWildFlyApplication("localhost", "9990", "/tmp/test.war", null, null);
+            assertTrue(toolResponse.isError());
+        } finally {
+            System.clearProperty(WildFlyMCPServer.READ_ONLY_PROPERTY);
+        }
+    }
+
+    @Test
+    public void testReadOnlyModeBlocksUndeploy() throws Exception {
+        System.setProperty(WildFlyMCPServer.READ_ONLY_PROPERTY, "true");
+        try {
+            ToolResponse toolResponse = server.undeployWildFlyApplication("localhost", "9990", "test.war");
+            assertTrue(toolResponse.isError());
+        } finally {
+            System.clearProperty(WildFlyMCPServer.READ_ONLY_PROPERTY);
+        }
+    }
+
+    @Test
+    public void testReadOnlyModeBlocksEnableLogging() throws Exception {
+        System.setProperty(WildFlyMCPServer.READ_ONLY_PROPERTY, "true");
+        try {
+            ToolResponse toolResponse = server.enableWildFlyLoggingCategory("localhost", "9990", "security");
+            assertTrue(toolResponse.isError());
+        } finally {
+            System.clearProperty(WildFlyMCPServer.READ_ONLY_PROPERTY);
+        }
+    }
+
+    @Test
+    public void testReadOnlyModeBlocksRemoveLogging() throws Exception {
+        System.setProperty(WildFlyMCPServer.READ_ONLY_PROPERTY, "true");
+        try {
+            ToolResponse toolResponse = server.removeWildFlyLoggingCategory("localhost", "9990", "security");
+            assertTrue(toolResponse.isError());
+        } finally {
+            System.clearProperty(WildFlyMCPServer.READ_ONLY_PROPERTY);
+        }
+    }
 }

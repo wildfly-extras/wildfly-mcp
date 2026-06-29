@@ -92,6 +92,54 @@ public class WildFlyMCPServer {
     @RestClient
     WildFlyHealthClient wildflyHealthClient;
 
+    // Read-only mode. When enabled, the MCP server refuses any operation that
+    // would modify the connected WildFly server, independently of the WildFly
+    // user's RBAC role. Configured (like the other settings) with the
+    // WILDFLY_MCP_SERVER_READONLY env variable or the org.wildfly.readonly
+    // system property.
+    static final String READ_ONLY_ENV = "WILDFLY_MCP_SERVER_READONLY";
+    static final String READ_ONLY_PROPERTY = "org.wildfly.readonly";
+
+    static boolean isReadOnly() {
+        String value = System.getenv(READ_ONLY_ENV);
+        if (value == null) {
+            value = System.getProperty(READ_ONLY_PROPERTY);
+        }
+        return Boolean.parseBoolean(value);
+    }
+
+    // Returns true only if the WildFly management model declares the provided
+    // CLI operation as read-only. The server's own metadata (the "read-only"
+    // flag returned by read-operation-description) is used as the source of
+    // truth rather than matching on the operation name, so an operation that is
+    // semantically read-only but implemented as a write operation is correctly
+    // rejected. Composite operations are not declared read-only and are
+    // therefore rejected as well.
+    boolean isReadOnlyOperation(Server server, User user, CommandContext ctx, String operation) throws Exception {
+        if (operation == null) {
+            return false;
+        }
+        int paren = operation.indexOf('(');
+        String head = (paren >= 0 ? operation.substring(0, paren) : operation).trim();
+        int colon = head.lastIndexOf(':');
+        if (colon < 0) {
+            return false;
+        }
+        String address = head.substring(0, colon).trim();
+        String operationName = head.substring(colon + 1).trim();
+        if (operationName.isEmpty()) {
+            return false;
+        }
+        ModelNode descRequest = ctx.buildRequest(address + ":read-operation-description(name=" + operationName + ")");
+        ModelNode result = wildflyClient.call(server, user, descRequest).get("result");
+        return result.hasDefined("read-only") && result.get("read-only").asBoolean(false);
+    }
+
+    private ToolResponse readOnlyError(String action) {
+        return buildErrorResponse("Read-only mode is enabled (" + READ_ONLY_PROPERTY
+                + "=true): " + action + " is not allowed.");
+    }
+
     @Tool()
     @RolesAllowed("admin")
     ToolResponse getWildFlyServerConfiguration(
@@ -211,8 +259,10 @@ public class WildFlyMCPServer {
         try {
             User user = new User();
             CommandContext ctx = CommandContextFactory.getInstance().newCommandContext();
+            if (isReadOnly() && !isReadOnlyOperation(server, user, ctx, operation)) {
+                return readOnlyError("invoking the non read-only operation '" + operation + "'");
+            }
             ModelNode mn = ctx.buildRequest(operation);
-            // TODO, implement possible rules if needed to disallow some operations.
             String value = wildflyClient.call(server, user, mn).toJSONString(false);
             return buildResponse(value);
         } catch (Exception ex) {
@@ -229,6 +279,9 @@ public class WildFlyMCPServer {
             @ToolArg(name = "name", description = "Defaults to the last portion of the deploymentPath.", required = false) String name,
             @ToolArg(name = "runtime-name", description = "Defaults to the last portion of the deploymentPath.", required = false) String runtimeName) {
         Server server = new Server(host, port);
+        if (isReadOnly()) {
+            return readOnlyError("deploying applications");
+        }
         try {
             User user = new User();
             Path path = Paths.get(deploymentPath);
@@ -268,6 +321,9 @@ public class WildFlyMCPServer {
             @ToolArg(name = "port", required = false) String port,
             @ToolArg(name = "name", description = "Defaults to the last portion of the deploymentPath.", required = true) String name) {
         Server server = new Server(host, port);
+        if (isReadOnly()) {
+            return readOnlyError("undeploying applications");
+        }
         try {
             User user = new User();
             ModelNode response = wildflyClient.call(new UndeployRequest(server, user, name));
@@ -339,6 +395,9 @@ public class WildFlyMCPServer {
             @ToolArg(name = "port", required = false) String port,
             @ToolArg(name = "timeout", required = false, description = "Graceful shutdown timeout") Integer timeout) {
         Server server = new Server(host, port);
+        if (isReadOnly()) {
+            return readOnlyError("shutting down the server");
+        }
         try {
             User user = new User();
             ModelNode response = wildflyClient.call(new ShutdownRequest(server, user, timeout));
@@ -419,6 +478,9 @@ public class WildFlyMCPServer {
             @ToolArg(name = "port", required = false) String port,
             String loggingCategory) {
         Server server = new Server(host, port);
+        if (isReadOnly()) {
+            return readOnlyError("enabling logging categories");
+        }
         try {
             User user = new User();
             String category = findCategory(loggingCategory);
@@ -451,6 +513,9 @@ public class WildFlyMCPServer {
             @ToolArg(name = "port", required = false) String port,
             String loggingCategory) {
         Server server = new Server(host, port);
+        if (isReadOnly()) {
+            return readOnlyError("removing logging categories");
+        }
         try {
             User user = new User();
             String category = findCategory(loggingCategory);
